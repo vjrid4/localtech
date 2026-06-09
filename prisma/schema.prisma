@@ -1,0 +1,577 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Core User Models
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  password      String
+  name          String
+  phone         String?
+  userType      UserType
+  avatar        String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  repairShop    RepairShop?
+  technician    Technician?
+  customer      Customer?
+  supplier      Supplier?
+}
+
+enum UserType {
+  ADMIN
+  REPAIR_SHOP_OWNER
+  TECHNICIAN
+  CUSTOMER
+  SUPPLIER
+}
+
+// Organization Models
+model RepairShop {
+  id              String    @id @default(cuid())
+  userId          String    @unique
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  name            String
+  description     String?
+  gstNumber       String?
+  phone           String
+  email           String
+  businessType    String?
+
+  // Location
+  street          String
+  city            String
+  state           String
+  zipCode         String
+  country         String
+
+  logo            String?
+  coverImage      String?
+  website         String?
+
+  // Business Settings
+  operatingHours  Json?
+  isVerified      Boolean   @default(false)
+  rating          Float     @default(0)
+  totalRepairs    Int       @default(0)
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  // Relations
+  branches        Branch[]
+  technicians     Technician[]
+  customers       Customer[]
+  repairs         Repair[]
+  inventory       InventoryItem[]
+  estimates       Estimate[]
+  invoices        Invoice[]
+  whatsappConfig  WhatsAppConfig?
+}
+
+model Branch {
+  id              String    @id @default(cuid())
+  repairShopId    String
+  repairShop      RepairShop @relation(fields: [repairShopId], references: [id], onDelete: Cascade)
+
+  name            String
+  street          String
+  city            String
+  state           String
+  zipCode         String
+  phone           String
+  email           String
+
+  managerName     String?
+  managerPhone    String?
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  // Relations
+  technicians     Technician[]
+  repairs         Repair[]
+}
+
+// User Role Models
+model Technician {
+  id              String    @id @default(cuid())
+  userId          String    @unique
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  repairShopId    String
+  repairShop      RepairShop @relation(fields: [repairShopId], references: [id], onDelete: Cascade)
+
+  branchId        String
+  branch          Branch    @relation(fields: [branchId], references: [id], onDelete: Cascade)
+
+  specialization  String[]  // JSON array of device types: ["iPhone", "Samsung", "OnePlus"]
+  certifications  String[]
+  rating          Float     @default(0)
+  totalRepairs    Int       @default(0)
+
+  idProof         String?
+  bankAccount     String?
+  aadharNumber    String?
+
+  isActive        Boolean   @default(true)
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  // Relations
+  repairs         Repair[]
+  reviews         Review[]
+  certifications_rel Certification[]
+}
+
+model Customer {
+  id              String    @id @default(cuid())
+  userId          String    @unique
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  repairShopId    String?
+  repairShop      RepairShop? @relation(fields: [repairShopId], references: [id], onDelete: SetNull)
+
+  preferredBrand  String?
+  loyaltyPoints   Int       @default(0)
+  totalSpent      Float     @default(0)
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  // Relations
+  devices         Device[]
+  repairs         Repair[]
+  reviews         Review[]
+  warranties      Warranty[]
+}
+
+model Supplier {
+  id              String    @id @default(cuid())
+  userId          String    @unique
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  companyName     String
+  gstNumber       String?
+  businessLicense String?
+
+  street          String
+  city            String
+  state           String
+  zipCode         String
+
+  rating          Float     @default(0)
+
+  isVerified      Boolean   @default(false)
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  // Relations
+  spareParts      SparePart[]
+  orders          SupplyOrder[]
+}
+
+// Device & Repair Models
+model Device {
+  id              String    @id @default(cuid())
+  customerId      String
+  customer        Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  brand           String
+  model           String
+  imei            String?
+  serialNumber    String?
+
+  color           String?
+  purchaseDate    DateTime?
+  purchasePrice   Float?
+
+  repairHistory   Repair[]
+
+  healthPassport  DeviceHealthPassport?
+  warranty        Warranty?
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
+
+model Repair {
+  id              String    @id @default(cuid())
+  repairShopId    String
+  repairShop      RepairShop @relation(fields: [repairShopId], references: [id], onDelete: Cascade)
+
+  branchId        String
+  branch          Branch    @relation(fields: [branchId], references: [id], onDelete: Cascade)
+
+  customerId      String
+  customer        Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  deviceId        String
+  device          Device    @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+
+  technicianId    String?
+  technician      Technician? @relation(fields: [technicianId], references: [id], onDelete: SetNull)
+
+  estimateId      String?
+  estimate        Estimate? @relation(fields: [estimateId], references: [id])
+
+  invoiceId       String?
+  invoice         Invoice?  @relation(fields: [invoiceId], references: [id])
+
+  status          RepairStatus
+  priority        Priority
+
+  issue           String
+  diagnosis       String?
+  solution        String?
+
+  estimatedCost   Float?
+  finalCost       Float?
+
+  partsUsed       RepairPart[]
+
+  startDate       DateTime  @default(now())
+  completionDate  DateTime?
+
+  notes           String?
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
+
+enum RepairStatus {
+  RECEIVED
+  DIAGNOSED
+  QUOTED
+  APPROVED
+  IN_PROGRESS
+  COMPLETED
+  DELIVERED
+  CANCELLED
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+model RepairPart {
+  id              String    @id @default(cuid())
+  repairId        String
+  repair          Repair    @relation(fields: [repairId], references: [id], onDelete: Cascade)
+
+  sparePartId     String
+  sparePart       SparePart @relation(fields: [sparePartId], references: [id])
+
+  quantity        Int
+  costPerUnit     Float
+
+  createdAt       DateTime  @default(now())
+}
+
+// Inventory & Spare Parts
+model InventoryItem {
+  id              String    @id @default(cuid())
+  repairShopId    String
+  repairShop      RepairShop @relation(fields: [repairShopId], references: [id], onDelete: Cascade)
+
+  sparePartId     String
+  sparePart       SparePart @relation("InventoryItems", fields: [sparePartId], references: [id])
+
+  quantity        Int
+  reorderLevel    Int
+  location        String?
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
+
+model SparePart {
+  id              String    @id @default(cuid())
+
+  name            String
+  category        String
+  deviceBrand     String[]  // ["Apple", "Samsung", "OnePlus"]
+  partNumber      String?
+
+  description     String?
+  image           String?
+
+  supplierId      String
+  supplier        Supplier  @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+
+  costPrice       Float
+  sellingPrice    Float
+
+  inventory       InventoryItem[] @relation("InventoryItems")
+  repairParts     RepairPart[]
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
+
+model SupplyOrder {
+  id              String    @id @default(cuid())
+  supplierId      String
+  supplier        Supplier  @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+
+  orderNumber     String    @unique
+  status          OrderStatus
+
+  totalAmount     Float
+  deliveryDate    DateTime?
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
+// Billing & Estimates
+model Estimate {
+  id              String    @id @default(cuid())
+  repairShopId    String
+  repairShop      RepairShop @relation(fields: [repairShopId], references: [id], onDelete: Cascade)
+
+  estimateNumber  String    @unique
+  repairId        String?
+  repair          Repair?   @relation(fields: [repairId], references: [id])
+
+  customerId      String
+
+  issueDescription String
+  diagnosis       String?
+  estimatedCost   Float
+  laborCharge     Float
+  partsCharge     Float
+
+  validUntil      DateTime
+
+  status          EstimateStatus
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
+
+enum EstimateStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  EXPIRED
+  CONVERTED
+}
+
+model Invoice {
+  id              String    @id @default(cuid())
+  repairShopId    String
+  repairShop      RepairShop @relation(fields: [repairShopId], references: [id], onDelete: Cascade)
+
+  invoiceNumber   String    @unique
+  repairId        String    @unique
+  repair          Repair    @relation(fields: [repairId], references: [id])
+
+  customerId      String
+
+  subtotal        Float
+  tax             Float
+  totalAmount     Float
+
+  paymentStatus   PaymentStatus
+  paymentMethod   PaymentMethod
+
+  paidDate        DateTime?
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
+
+enum PaymentStatus {
+  PENDING
+  PARTIAL
+  PAID
+  OVERDUE
+  CANCELLED
+}
+
+enum PaymentMethod {
+  CASH
+  UPI
+  CARD
+  BANK_TRANSFER
+  WHATSAPP_PAY
+}
+
+// Warranty & Device Health
+model Warranty {
+  id              String    @id @default(cuid())
+  customerId      String
+  customer        Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  deviceId        String    @unique
+  device          Device    @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+
+  type            WarrantyType
+  startDate       DateTime
+  endDate         DateTime
+
+  coverage        String[]
+
+  isActive        Boolean   @default(true)
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
+
+enum WarrantyType {
+  MANUFACTURER
+  EXTENDED
+  ACCIDENTAL_DAMAGE
+  REFURBISHED
+  CUSTOM
+}
+
+model DeviceHealthPassport {
+  id              String    @id @default(cuid())
+  deviceId        String    @unique
+  device          Device    @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+
+  batteryHealth   Float?
+  screenCondition String?
+  cameraQuality   String?
+
+  repairCount     Int       @default(0)
+  lastRepairDate  DateTime?
+
+  healthScore     Float     @default(100)
+
+  diagnosticReport Json?
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
+
+// Knowledge & Learning
+model Certification {
+  id              String    @id @default(cuid())
+  technicianId    String
+  technician      Technician @relation(fields: [technicianId], references: [id], onDelete: Cascade)
+
+  name            String
+  issuer          String
+  issueDate       DateTime
+  expiryDate      DateTime?
+
+  certificateUrl  String?
+
+  createdAt       DateTime  @default(now())
+}
+
+model SchematicLibrary {
+  id              String    @id @default(cuid())
+
+  deviceBrand     String
+  deviceModel     String
+
+  schematicUrl    String
+  boardviewUrl    String?
+
+  description     String?
+
+  downloadCount   Int       @default(0)
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
+
+model HardwareSolution {
+  id              String    @id @default(cuid())
+
+  deviceBrand     String
+  deviceModel     String
+
+  problem         String
+  solution        String
+
+  steps           String[]
+  tools           String[]
+
+  successRate     Float?
+  difficulty      String
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
+
+model Review {
+  id              String    @id @default(cuid())
+  customerId      String
+  customer        Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  technicianId    String
+  technician      Technician @relation(fields: [technicianId], references: [id], onDelete: Cascade)
+
+  rating          Int       // 1-5
+  comment         String?
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
+
+// WhatsApp Integration
+model WhatsAppConfig {
+  id              String    @id @default(cuid())
+  repairShopId    String    @unique
+  repairShop      RepairShop @relation(fields: [repairShopId], references: [id], onDelete: Cascade)
+
+  businessPhoneId String
+  phoneNumber     String
+  accessToken     String
+
+  webhookUrl      String?
+  webhookToken    String?
+
+  isActive        Boolean   @default(true)
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
+
+model WhatsAppMessage {
+  id              String    @id @default(cuid())
+
+  repairShopId    String
+  recipientPhone  String
+
+  messageType     String    // "repair_update", "estimate", "invoice", "reminder"
+  content         String
+
+  status          MessageStatus
+
+  sentAt          DateTime  @default(now())
+}
+
+enum MessageStatus {
+  SENT
+  DELIVERED
+  READ
+  FAILED
+}
