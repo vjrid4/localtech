@@ -2,10 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { deviceId: string } }
+  { params }: { params: Promise<{ deviceId: string }> }
 ) {
   try {
-    const { deviceId } = params;
+    const { deviceId } = await params;
 
     // TODO: Fetch device health passport from database
     // const healthPassport = await prisma.deviceHealthPassport.findUnique({...})
@@ -37,10 +37,10 @@ export async function GET(
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { deviceId: string } }
+  { params }: { params: Promise<{ deviceId: string }> }
 ) {
   try {
-    const { deviceId } = params;
+    const { deviceId } = await params;
     const body = await request.json();
 
     // TODO: Update device health passport
