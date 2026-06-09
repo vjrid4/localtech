@@ -3,52 +3,42 @@ import { z } from "zod";
 import { prisma } from "@/lib/db/prisma";
 import { authenticateToken } from "@/lib/auth/middleware";
 
-const repairSchema = z.object({
-  customerId: z.string(),
-  deviceId: z.string(),
+const estimateSchema = z.object({
   repairShopId: z.string(),
-  branchId: z.string(),
-  issue: z.string(),
-  priority: z.enum(["LOW", "MEDIUM", "HIGH", "URGENT"]).default("MEDIUM"),
-  estimatedCost: z.number().optional(),
+  customerId: z.string(),
+  issueDescription: z.string(),
+  estimatedCost: z.number().min(0),
+  laborCharge: z.number().min(0),
+  partsCharge: z.number().min(0),
+  diagnosis: z.string().optional(),
+  validUntil: z.string().datetime().optional(),
 });
 
-// GET repairs (filter by shop, customer, or status)
+// GET estimates
 export async function GET(request: NextRequest) {
   try {
     const repairShopId = request.nextUrl.searchParams.get("repairShopId");
     const customerId = request.nextUrl.searchParams.get("customerId");
-    const status = request.nextUrl.searchParams.get("status");
-    const limit = Math.min(parseInt(request.nextUrl.searchParams.get("limit") || "50"), 100);
 
     const where: any = {};
     if (repairShopId) where.repairShopId = repairShopId;
     if (customerId) where.customerId = customerId;
-    if (status) where.status = status;
 
-    const repairs = await prisma.repair.findMany({
+    const estimates = await prisma.estimate.findMany({
       where,
-      include: {
-        customer: true,
-        device: true,
-        technician: true,
-      },
-      orderBy: {
-        createdAt: "desc",
-      },
-      take: limit,
+      orderBy: { createdAt: "desc" },
     });
 
     return NextResponse.json({
       success: true,
-      data: repairs,
-      count: repairs.length,
+      data: estimates,
+      count: estimates.length,
     });
   } catch (error) {
     return NextResponse.json(
       {
         success: false,
-        message: "Failed to fetch repairs",
+        message: "Failed to fetch estimates",
         error: error instanceof Error ? error.message : "Unknown error",
       },
       { status: 500 }
@@ -56,7 +46,7 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST create new repair
+// POST create estimate
 export async function POST(request: NextRequest) {
   const auth = authenticateToken(request);
 
@@ -69,25 +59,26 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const repairData = repairSchema.parse(body);
+    const estimateData = estimateSchema.parse(body);
 
-    const repair = await prisma.repair.create({
+    // Generate estimate number
+    const estimateCount = await prisma.estimate.count();
+    const estimateNumber = `EST-${Date.now()}-${estimateCount + 1}`;
+
+    const estimate = await prisma.estimate.create({
       data: {
-        ...repairData,
-        status: "RECEIVED",
-      },
-      include: {
-        customer: true,
-        device: true,
-        repairShop: true,
+        ...estimateData,
+        estimateNumber,
+        status: "PENDING",
+        validUntil: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
       },
     });
 
     return NextResponse.json(
       {
         success: true,
-        message: "Repair created successfully",
-        data: repair,
+        message: "Estimate created successfully",
+        data: estimate,
       },
       { status: 201 }
     );
@@ -106,7 +97,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         success: false,
-        message: "Failed to create repair",
+        message: "Failed to create estimate",
         error: error instanceof Error ? error.message : "Unknown error",
       },
       { status: 500 }

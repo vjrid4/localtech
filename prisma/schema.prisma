@@ -223,11 +223,9 @@ model Repair {
   technicianId    String?
   technician      Technician? @relation(fields: [technicianId], references: [id], onDelete: SetNull)
 
-  estimateId      String?
-  estimate        Estimate? @relation(fields: [estimateId], references: [id])
+  estimate        Estimate?
 
-  invoiceId       String?
-  invoice         Invoice?  @relation(fields: [invoiceId], references: [id])
+  invoice         Invoice?
 
   status          RepairStatus
   priority        Priority
@@ -353,7 +351,7 @@ model Estimate {
   repairShop      RepairShop @relation(fields: [repairShopId], references: [id], onDelete: Cascade)
 
   estimateNumber  String    @unique
-  repairId        String?
+  repairId        String?   @unique
   repair          Repair?   @relation(fields: [repairId], references: [id])
 
   customerId      String
