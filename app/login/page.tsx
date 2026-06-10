@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { setToken, setUser, apiPost } from "@/lib/auth/client";
 
 const DEMO_ACCOUNTS = [
@@ -115,6 +116,10 @@ export default function LoginPage() {
 
           <p className="text-center text-xs text-graphite-500 mt-6">
             Demo password for all accounts: <span className="text-graphite-300 font-mono">password123</span>
+          </p>
+          <p className="text-center text-xs text-graphite-500 mt-3">
+            New to LocalTech?{" "}
+            <Link href="/register" className="text-accent-400 hover:text-accent-300 transition">Create an account</Link>
           </p>
         </div>
       </div>

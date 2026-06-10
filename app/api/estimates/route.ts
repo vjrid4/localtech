@@ -4,8 +4,9 @@ import { prisma } from "@/lib/db/prisma";
 import { authenticateToken } from "@/lib/auth/middleware";
 
 const estimateSchema = z.object({
-  repairShopId: z.string(),
-  customerId: z.string(),
+  repairShopId: z.string().optional(),
+  customerId: z.string().optional(),
+  repairId: z.string().optional(),
   issueDescription: z.string(),
   estimatedCost: z.number().min(0),
   laborCharge: z.number().min(0),
@@ -88,28 +89,35 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const estimateData = estimateSchema.parse(body);
 
-    // SECURITY: Verify shop ownership (don't trust repairShopId from body)
-    const shop = await prisma.repairShop.findUnique({
-      where: { id: estimateData.repairShopId },
-    });
+    // Resolve shop + customer — either from repairId (preferred) or explicit IDs
+    let resolvedShopId: string;
+    let resolvedCustomerId: string;
 
-    if (!shop || shop.userId !== auth.user!.userId) {
-      return NextResponse.json(
-        { success: false, message: "Unauthorized shop access" },
-        { status: 403 }
-      );
-    }
+    if (estimateData.repairId) {
+      const repair = await prisma.repair.findUnique({
+        where: { id: estimateData.repairId },
+        select: { repairShopId: true, customerId: true, repairShop: { select: { userId: true } } },
+      });
+      if (!repair) return NextResponse.json({ success: false, message: "Repair not found" }, { status: 404 });
+      if (repair.repairShop.userId !== auth.user!.userId)
+        return NextResponse.json({ success: false, message: "Unauthorized shop access" }, { status: 403 });
+      resolvedShopId = repair.repairShopId;
+      resolvedCustomerId = repair.customerId;
+    } else {
+      // Legacy path: explicit repairShopId + customerId
+      if (!estimateData.repairShopId || !estimateData.customerId)
+        return NextResponse.json({ success: false, message: "Provide repairId or both repairShopId and customerId" }, { status: 400 });
 
-    // Verify customer belongs to this shop
-    const customer = await prisma.customer.findUnique({
-      where: { id: estimateData.customerId },
-    });
+      const shop = await prisma.repairShop.findUnique({ where: { id: estimateData.repairShopId } });
+      if (!shop || shop.userId !== auth.user!.userId)
+        return NextResponse.json({ success: false, message: "Unauthorized shop access" }, { status: 403 });
 
-    if (!customer || customer.repairShopId !== shop.id) {
-      return NextResponse.json(
-        { success: false, message: "Customer does not belong to this shop" },
-        { status: 400 }
-      );
+      const customer = await prisma.customer.findUnique({ where: { id: estimateData.customerId } });
+      if (!customer || customer.repairShopId !== shop.id)
+        return NextResponse.json({ success: false, message: "Customer does not belong to this shop" }, { status: 400 });
+
+      resolvedShopId = shop.id;
+      resolvedCustomerId = customer.id;
     }
 
     // Generate estimate number
@@ -118,10 +126,18 @@ export async function POST(request: NextRequest) {
 
     const estimate = await prisma.estimate.create({
       data: {
-        ...estimateData,
+        repairShopId: resolvedShopId,
+        customerId: resolvedCustomerId,
+        issueDescription: estimateData.issueDescription,
+        estimatedCost: estimateData.estimatedCost,
+        laborCharge: estimateData.laborCharge,
+        partsCharge: estimateData.partsCharge,
+        diagnosis: estimateData.diagnosis,
         estimateNumber,
         status: "PENDING",
-        validUntil: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
+        validUntil: estimateData.validUntil
+          ? new Date(estimateData.validUntil)
+          : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
       },
     });
 

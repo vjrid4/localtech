@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { apiGet } from "@/lib/auth/client";
 import StatusUpdateDrawer from "@/components/StatusUpdateDrawer";
+import EstimateDrawer from "@/components/EstimateDrawer";
 
 type Repair = {
   id: string;
@@ -158,6 +159,12 @@ export default function ShopRepairsPage() {
                   <td className="py-3 px-5 text-right">
                     <div className="flex flex-col items-end gap-1">
                       <p className="font-medium">{r.finalCost ? formatINR(r.finalCost) : r.estimatedCost ? formatINR(r.estimatedCost) : "—"}</p>
+                      <EstimateDrawer
+                        repairId={r.id}
+                        issue={r.issue}
+                        currentStatus={r.status}
+                        onCreated={() => {}}
+                      />
                       <StatusUpdateDrawer
                         repairId={r.id}
                         currentStatus={r.status}

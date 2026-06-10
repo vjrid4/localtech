@@ -11,6 +11,7 @@ const repairSchema = z.object({
   issue: z.string(),
   priority: z.enum(["LOW", "MEDIUM", "HIGH", "URGENT"]).default("MEDIUM"),
   estimatedCost: z.number().optional(),
+  technicianId: z.string().optional(),
 });
 
 // GET repairs (filter by shop, customer, or status)
@@ -28,6 +29,7 @@ export async function GET(request: NextRequest) {
     const customQueryShopId = request.nextUrl.searchParams.get("repairShopId");
     const customQueryCustomerId = request.nextUrl.searchParams.get("customerId");
     const status = request.nextUrl.searchParams.get("status");
+    const uninvoiced = request.nextUrl.searchParams.get("uninvoiced");
     const limit = Math.min(parseInt(request.nextUrl.searchParams.get("limit") || "50"), 100);
 
     // SECURITY: Scope queries to authenticated user's resources
@@ -67,13 +69,17 @@ export async function GET(request: NextRequest) {
     }
 
     if (status) where.status = status;
+    if (uninvoiced === "1") {
+      where.status = "COMPLETED";
+      where.invoice = { is: null };
+    }
 
     const repairs = await prisma.repair.findMany({
       where,
       include: {
-        customer: true,
+        customer: { include: { user: { select: { name: true, phone: true, email: true } } } },
         device: true,
-        technician: true,
+        technician: { include: { user: { select: { name: true } } } },
       },
       orderBy: {
         createdAt: "desc",
