@@ -15,7 +15,7 @@ const deviceSchema = z.object({
 });
 
 export async function GET(request: NextRequest) {
-  const auth = authenticateToken(request);
+  const auth = await authenticateToken(request);
   if (!auth.authenticated) return createUnauthorizedResponse();
 
   const customerId = request.nextUrl.searchParams.get("customerId");
@@ -50,7 +50,7 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const auth = authenticateToken(request);
+  const auth = await authenticateToken(request);
   if (!auth.authenticated) return createUnauthorizedResponse();
 
   try {

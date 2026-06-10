@@ -3,7 +3,7 @@ import { prisma } from "@/lib/db/prisma";
 import { authenticateToken, createUnauthorizedResponse } from "@/lib/auth/middleware";
 
 export async function GET(request: NextRequest) {
-  const auth = authenticateToken(request);
+  const auth = await authenticateToken(request);
 
   if (!auth.authenticated) {
     return createUnauthorizedResponse();

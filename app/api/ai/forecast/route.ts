@@ -15,7 +15,7 @@ const forecastSchema = z.object({
 });
 
 export async function POST(request: NextRequest) {
-  const auth = authenticateToken(request);
+  const auth = await authenticateToken(request);
 
   if (!auth.authenticated) {
     return NextResponse.json(

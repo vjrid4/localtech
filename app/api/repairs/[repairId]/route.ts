@@ -26,7 +26,7 @@ export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ repairId: string }> }
 ) {
-  const auth = authenticateToken(request);
+  const auth = await authenticateToken(request);
 
   if (!auth.authenticated) {
     return NextResponse.json(
@@ -95,7 +95,7 @@ export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ repairId: string }> }
 ) {
-  const auth = authenticateToken(request);
+  const auth = await authenticateToken(request);
 
   if (!auth.authenticated) {
     return NextResponse.json(

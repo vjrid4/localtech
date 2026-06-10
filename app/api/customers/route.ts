@@ -13,7 +13,7 @@ const createCustomerSchema = z.object({
 
 // GET — search customers by phone or name (scoped to caller's shop)
 export async function GET(request: NextRequest) {
-  const auth = authenticateToken(request);
+  const auth = await authenticateToken(request);
   if (!auth.authenticated) return createUnauthorizedResponse();
 
   const q = request.nextUrl.searchParams.get("q") ?? "";
@@ -65,7 +65,7 @@ export async function GET(request: NextRequest) {
 
 // POST — create a new customer (creates User + Customer records)
 export async function POST(request: NextRequest) {
-  const auth = authenticateToken(request);
+  const auth = await authenticateToken(request);
   if (!auth.authenticated) return createUnauthorizedResponse();
 
   try {

@@ -16,7 +16,7 @@ const repairSchema = z.object({
 
 // GET repairs (filter by shop, customer, or status)
 export async function GET(request: NextRequest) {
-  const auth = authenticateToken(request);
+  const auth = await authenticateToken(request);
 
   if (!auth.authenticated) {
     return NextResponse.json(
@@ -106,7 +106,7 @@ export async function GET(request: NextRequest) {
 
 // POST create new repair
 export async function POST(request: NextRequest) {
-  const auth = authenticateToken(request);
+  const auth = await authenticateToken(request);
 
   if (!auth.authenticated) {
     return NextResponse.json(
