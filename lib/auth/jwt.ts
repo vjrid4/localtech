@@ -11,7 +11,7 @@ export interface TokenPayload {
   userId: string;
   email: string;
   userType: string;
-  tokenVersion?: number;
+  tokenVersion: number;
 }
 
 export function createToken(payload: TokenPayload): string {

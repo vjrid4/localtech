@@ -16,16 +16,16 @@ export async function authenticateToken(request: NextRequest) {
     return { authenticated: false, user: null, error: "Invalid or expired token" };
   }
 
-  // If the JWT carries a tokenVersion, verify it matches the DB — this
-  // invalidates all sessions issued before a password reset.
-  if (payload.tokenVersion !== undefined) {
-    const user = await prisma.user.findUnique({
-      where: { id: payload.userId },
-      select: { tokenVersion: true },
-    });
-    if (!user || user.tokenVersion !== payload.tokenVersion) {
-      return { authenticated: false, user: null, error: "Session invalidated" };
-    }
+  // Always verify tokenVersion against the DB. Tokens issued before this
+  // field existed will have tokenVersion=undefined at runtime, which
+  // naturally fails the strict-equality check — forcing re-login.
+  const user = await prisma.user.findUnique({
+    where: { id: payload.userId },
+    select: { tokenVersion: true },
+  });
+
+  if (!user || user.tokenVersion !== payload.tokenVersion) {
+    return { authenticated: false, user: null, error: "Session invalidated" };
   }
 
   return { authenticated: true, user: payload, error: null };

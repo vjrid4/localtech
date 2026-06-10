@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
   try {
     const { token, password } = schema.parse(await request.json());
 
-    let payload: { userId: string; purpose: string; pwHash?: string };
+    let payload: { userId: string; purpose: string; resetCounter: number };
     try {
       payload = jwt.verify(token, JWT_SECRET) as typeof payload;
     } catch {
@@ -27,24 +27,31 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(BAD_TOKEN, { status: 400 });
     }
 
-    // Fetch current user to enforce single-use: if pwHash in the JWT no
-    // longer matches the DB, the token has already been consumed.
+    // resetCounter is required — tokens without it (or issued before this
+    // field was added) are rejected rather than silently passed through.
+    if (typeof payload.resetCounter !== "number") {
+      return NextResponse.json(BAD_TOKEN, { status: 400 });
+    }
+
     const user = await prisma.user.findUnique({
       where: { id: payload.userId },
-      select: { password: true },
+      select: { tokenVersion: true },
     });
 
     if (!user) {
       return NextResponse.json(BAD_TOKEN, { status: 400 });
     }
 
-    if (payload.pwHash && payload.pwHash !== user.password) {
+    // Single-use enforcement: resetCounter must match current tokenVersion.
+    // A successful reset increments tokenVersion, so replayed tokens fail.
+    if (payload.resetCounter !== user.tokenVersion) {
       return NextResponse.json(BAD_TOKEN, { status: 400 });
     }
 
     const hashed = await bcrypt.hash(password, 10);
 
-    // Increment tokenVersion to invalidate all outstanding session JWTs.
+    // Increment tokenVersion: invalidates this reset token AND all outstanding
+    // session JWTs simultaneously.
     await prisma.user.update({
       where: { id: payload.userId },
       data: { password: hashed, tokenVersion: { increment: 1 } },
