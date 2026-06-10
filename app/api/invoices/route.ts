@@ -6,17 +6,48 @@ import { authenticateToken } from "@/lib/auth/middleware";
 const invoiceSchema = z.object({
   repairId: z.string(),
   paymentMethod: z.enum(["CASH", "UPI", "CARD", "BANK_TRANSFER", "WHATSAPP_PAY"]),
-  gstRate: z.number().default(18),
+  gstRate: z.number().min(0).max(100).default(18),
 });
 
 // GET invoices
 export async function GET(request: NextRequest) {
+  const auth = authenticateToken(request);
+
+  if (!auth.authenticated) {
+    return NextResponse.json(
+      { success: false, message: "Unauthorized" },
+      { status: 401 }
+    );
+  }
+
   try {
-    const repairShopId = request.nextUrl.searchParams.get("repairShopId");
     const status = request.nextUrl.searchParams.get("status");
 
+    // SECURITY: Scope to authenticated user's shop or customer record
     const where: any = {};
-    if (repairShopId) where.repairShopId = repairShopId;
+
+    const shop = await prisma.repairShop.findFirst({
+      where: { userId: auth.user!.userId },
+      select: { id: true },
+    });
+
+    if (shop) {
+      where.repairShopId = shop.id;
+    } else {
+      const customer = await prisma.customer.findFirst({
+        where: { userId: auth.user!.userId },
+        select: { id: true },
+      });
+      if (customer) {
+        where.customerId = customer.id;
+      } else {
+        return NextResponse.json(
+          { success: false, message: "User role not found" },
+          { status: 404 }
+        );
+      }
+    }
+
     if (status) where.paymentStatus = status;
 
     const invoices = await prisma.invoice.findMany({
@@ -63,6 +94,7 @@ export async function POST(request: NextRequest) {
       where: { id: repairId },
       include: {
         invoice: true,
+        repairShop: true,
       },
     });
 
@@ -70,6 +102,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { success: false, message: "Repair not found" },
         { status: 404 }
+      );
+    }
+
+    // SECURITY: Verify shop ownership before creating financial record
+    if (repair.repairShop.userId !== auth.user!.userId) {
+      return NextResponse.json(
+        { success: false, message: "Unauthorized shop access" },
+        { status: 403 }
       );
     }
 

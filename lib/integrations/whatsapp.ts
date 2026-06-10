@@ -1,5 +1,6 @@
 // Phase 4: WhatsApp Business API Integration
 
+import { randomBytes } from "crypto";
 import { prisma } from "@/lib/db/prisma";
 
 export interface WhatsAppMessage {
@@ -139,7 +140,7 @@ export async function setupWebhook(
       where: { repairShopId: shopId },
       data: {
         webhookUrl,
-        webhookToken: Buffer.from(Math.random().toString()).toString("base64"),
+        webhookToken: randomBytes(32).toString("base64url"),
       },
     });
 

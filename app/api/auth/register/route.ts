@@ -33,12 +33,13 @@ export async function POST(request: NextRequest) {
 
     const hashedPassword = await hash(password, 10);
 
+    // SECURITY: Force CUSTOMER role for public registration. Elevated roles require admin flow.
     const user = await prisma.user.create({
       data: {
         email,
         password: hashedPassword,
         name,
-        userType,
+        userType: "CUSTOMER",
         phone,
       },
     });

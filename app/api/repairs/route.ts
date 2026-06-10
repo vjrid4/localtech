@@ -15,15 +15,57 @@ const repairSchema = z.object({
 
 // GET repairs (filter by shop, customer, or status)
 export async function GET(request: NextRequest) {
+  const auth = authenticateToken(request);
+
+  if (!auth.authenticated) {
+    return NextResponse.json(
+      { success: false, message: "Unauthorized" },
+      { status: 401 }
+    );
+  }
+
   try {
-    const repairShopId = request.nextUrl.searchParams.get("repairShopId");
-    const customerId = request.nextUrl.searchParams.get("customerId");
+    const customQueryShopId = request.nextUrl.searchParams.get("repairShopId");
+    const customQueryCustomerId = request.nextUrl.searchParams.get("customerId");
     const status = request.nextUrl.searchParams.get("status");
     const limit = Math.min(parseInt(request.nextUrl.searchParams.get("limit") || "50"), 100);
 
+    // SECURITY: Scope queries to authenticated user's resources
     const where: any = {};
-    if (repairShopId) where.repairShopId = repairShopId;
-    if (customerId) where.customerId = customerId;
+
+    // If user is a shop owner, can only see their repairs
+    const shop = await prisma.repairShop.findFirst({
+      where: { userId: auth.user!.userId },
+      select: { id: true },
+    });
+
+    if (shop) {
+      where.repairShopId = shop.id;
+    } else {
+      // If user is a customer, can only see their repairs
+      const customer = await prisma.customer.findFirst({
+        where: { userId: auth.user!.userId },
+        select: { id: true },
+      });
+      if (customer) {
+        where.customerId = customer.id;
+      } else {
+        // Technician: can see repairs assigned to them
+        const tech = await prisma.technician.findFirst({
+          where: { userId: auth.user!.userId },
+          select: { id: true },
+        });
+        if (tech) {
+          where.technicianId = tech.id;
+        } else {
+          return NextResponse.json(
+            { success: false, message: "User role not found" },
+            { status: 404 }
+          );
+        }
+      }
+    }
+
     if (status) where.status = status;
 
     const repairs = await prisma.repair.findMany({
@@ -70,6 +112,18 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const repairData = repairSchema.parse(body);
+
+    // SECURITY: Verify shop ownership
+    const shop = await prisma.repairShop.findUnique({
+      where: { id: repairData.repairShopId },
+    });
+
+    if (!shop || shop.userId !== auth.user!.userId) {
+      return NextResponse.json(
+        { success: false, message: "Unauthorized shop access" },
+        { status: 403 }
+      );
+    }
 
     const repair = await prisma.repair.create({
       data: {

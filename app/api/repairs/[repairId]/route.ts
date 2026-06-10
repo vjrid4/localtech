@@ -26,6 +26,15 @@ export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ repairId: string }> }
 ) {
+  const auth = authenticateToken(request);
+
+  if (!auth.authenticated) {
+    return NextResponse.json(
+      { success: false, message: "Unauthorized" },
+      { status: 401 }
+    );
+  }
+
   try {
     const { repairId } = await params;
 
@@ -50,6 +59,18 @@ export async function GET(
       return NextResponse.json(
         { success: false, message: "Repair not found" },
         { status: 404 }
+      );
+    }
+
+    // SECURITY: Verify ownership (shop owner, technician, or customer)
+    if (
+      repair.repairShop.userId !== auth.user!.userId &&
+      repair.technician?.userId !== auth.user!.userId &&
+      repair.customer.userId !== auth.user!.userId
+    ) {
+      return NextResponse.json(
+        { success: false, message: "Unauthorized access" },
+        { status: 403 }
       );
     }
 
@@ -87,6 +108,30 @@ export async function PATCH(
     const { repairId } = await params;
     const body = await request.json();
     const updateData = updateRepairSchema.parse(body);
+
+    // SECURITY: Verify ownership before update
+    const existing = await prisma.repair.findUnique({
+      where: { id: repairId },
+      include: { repairShop: true, technician: true, customer: true },
+    });
+
+    if (!existing) {
+      return NextResponse.json(
+        { success: false, message: "Repair not found" },
+        { status: 404 }
+      );
+    }
+
+    if (
+      existing.repairShop.userId !== auth.user!.userId &&
+      existing.technician?.userId !== auth.user!.userId &&
+      existing.customer.userId !== auth.user!.userId
+    ) {
+      return NextResponse.json(
+        { success: false, message: "Unauthorized access" },
+        { status: 403 }
+      );
+    }
 
     const updates: any = { ...updateData };
 

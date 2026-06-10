@@ -16,13 +16,40 @@ const estimateSchema = z.object({
 
 // GET estimates
 export async function GET(request: NextRequest) {
+  const auth = authenticateToken(request);
+
+  if (!auth.authenticated) {
+    return NextResponse.json(
+      { success: false, message: "Unauthorized" },
+      { status: 401 }
+    );
+  }
+
   try {
-    const repairShopId = request.nextUrl.searchParams.get("repairShopId");
-    const customerId = request.nextUrl.searchParams.get("customerId");
+    // SECURITY: Scope to authenticated user's resources (ignore query params for authorization)
+    const shop = await prisma.repairShop.findFirst({
+      where: { userId: auth.user!.userId },
+      select: { id: true },
+    });
 
     const where: any = {};
-    if (repairShopId) where.repairShopId = repairShopId;
-    if (customerId) where.customerId = customerId;
+    if (shop) {
+      where.repairShopId = shop.id;
+    } else {
+      // For customers, only show their estimates
+      const customer = await prisma.customer.findFirst({
+        where: { userId: auth.user!.userId },
+        select: { id: true },
+      });
+      if (customer) {
+        where.customerId = customer.id;
+      } else {
+        return NextResponse.json(
+          { success: false, message: "User role not found" },
+          { status: 404 }
+        );
+      }
+    }
 
     const estimates = await prisma.estimate.findMany({
       where,
@@ -60,6 +87,30 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const estimateData = estimateSchema.parse(body);
+
+    // SECURITY: Verify shop ownership (don't trust repairShopId from body)
+    const shop = await prisma.repairShop.findUnique({
+      where: { id: estimateData.repairShopId },
+    });
+
+    if (!shop || shop.userId !== auth.user!.userId) {
+      return NextResponse.json(
+        { success: false, message: "Unauthorized shop access" },
+        { status: 403 }
+      );
+    }
+
+    // Verify customer belongs to this shop
+    const customer = await prisma.customer.findUnique({
+      where: { id: estimateData.customerId },
+    });
+
+    if (!customer || customer.repairShopId !== shop.id) {
+      return NextResponse.json(
+        { success: false, message: "Customer does not belong to this shop" },
+        { status: 400 }
+      );
+    }
 
     // Generate estimate number
     const estimateCount = await prisma.estimate.count();
