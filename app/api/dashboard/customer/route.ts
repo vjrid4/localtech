@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
         userId: auth.user!.userId,
       },
       include: {
-        devices: true,
+        devices: { include: { healthPassport: true } },
         repairs: {
           orderBy: {
             createdAt: "desc",
@@ -74,6 +74,10 @@ export async function GET(request: NextRequest) {
           brand: device.brand,
           model: device.model,
           color: device.color,
+          healthScore: device.healthPassport?.healthScore ?? null,
+          batteryHealth: device.healthPassport?.batteryHealth ?? null,
+          lastRepairDate: device.healthPassport?.lastRepairDate ?? null,
+          repairCount: device.healthPassport?.repairCount ?? 0,
         })),
         recentRepairs: customer.repairs.map((repair: any) => ({
           id: repair.id,

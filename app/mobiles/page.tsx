@@ -84,7 +84,7 @@ export default function MobilesPage() {
                 30-day warranty. Doorstep or walk-in — your choice.
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
-                <Link href="/dashboard/shop/repairs/new" className="px-7 py-4 bg-green-500 hover:bg-green-400 text-white font-bold rounded-xl transition text-center">
+                <Link href="/book" className="px-7 py-4 bg-green-500 hover:bg-green-400 text-white font-bold rounded-xl transition text-center">
                   Book a Repair Now
                 </Link>
                 <a href="#price-guide" className="px-7 py-4 bg-white/10 border border-white/20 hover:bg-white/15 text-white font-medium rounded-xl transition text-center">
@@ -174,7 +174,7 @@ export default function MobilesPage() {
           <Reveal>
             <h2 className="text-4xl md:text-5xl font-bold mb-6" style={jk}>Ready to get your phone fixed?</h2>
             <p className="text-white/80 text-lg mb-10">Tell us the problem and we&apos;ll connect you with a verified technician near you in minutes.</p>
-            <Link href="/dashboard/shop/repairs/new" className="inline-block px-10 py-4 bg-white text-green-600 font-bold rounded-2xl text-lg hover:bg-gray-50 transition shadow-xl">
+            <Link href="/book" className="inline-block px-10 py-4 bg-white text-green-600 font-bold rounded-2xl text-lg hover:bg-gray-50 transition shadow-xl">
               Book Repair Now →
             </Link>
           </Reveal>

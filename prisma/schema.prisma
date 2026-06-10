@@ -573,3 +573,35 @@ enum MessageStatus {
   READ
   FAILED
 }
+
+// Business enquiries from service center owners, technicians, suppliers
+model BusinessLead {
+  id          String   @id @default(cuid())
+  name        String
+  email       String
+  phone       String?
+  city        String?
+  leadType    String   // "REPAIR_SHOP_OWNER" | "TECHNICIAN" | "SUPPLIER"
+  status      String   @default("NEW") // "NEW" | "CONTACTED" | "ONBOARDED" | "REJECTED"
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// Public booking requests (no login required)
+model BookingRequest {
+  id            String   @id @default(cuid())
+  reference     String   @unique
+  name          String
+  phone         String
+  email         String?
+  city          String?
+  deviceType    String   // "mobile" | "tv" | "laptop" | "appliance" | "cctv" | "solar"
+  deviceBrand   String?
+  deviceModel   String?
+  issueDescription String
+  status        String   @default("PENDING") // "PENDING" | "ASSIGNED" | "CONVERTED" | "CANCELLED"
+  repairId      String?  // set when converted to a real repair
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}

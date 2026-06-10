@@ -155,10 +155,10 @@ export default function LocalTechHomepage() {
             CCTV systems, solar equipment and more — right in your neighbourhood.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center" style={{ opacity: heroLoaded ? 1 : 0, transition: "opacity 0.9s ease 0.4s" }}>
-            <a href="#get-help" className="group inline-flex items-center justify-center gap-2 px-8 py-4 bg-green-500 hover:bg-green-400 text-white font-bold rounded-2xl text-lg transition-all duration-200 shadow-xl shadow-green-500/30 hover:scale-105">
+            <Link href="/book" className="group inline-flex items-center justify-center gap-2 px-8 py-4 bg-green-500 hover:bg-green-400 text-white font-bold rounded-2xl text-lg transition-all duration-200 shadow-xl shadow-green-500/30 hover:scale-105">
               Get Repair Help
               <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg>
-            </a>
+            </Link>
             <a href="#technicians" className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-white/10 backdrop-blur border border-white/25 hover:bg-white/20 text-white font-bold rounded-2xl text-lg transition-all duration-200">
               Join as Technician
             </a>
@@ -429,8 +429,8 @@ export default function LocalTechHomepage() {
               Tell us what&apos;s wrong. We&apos;ll find you the right technician — near you, right now.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link href="/mobiles" className="px-8 py-4 bg-white text-green-600 font-bold rounded-2xl text-lg hover:bg-gray-50 transition shadow-xl">
-                Book Mobile Repair
+              <Link href="/book" className="px-8 py-4 bg-white text-green-600 font-bold rounded-2xl text-lg hover:bg-gray-50 transition shadow-xl">
+                Book a Repair
               </Link>
               <Link href="/appliances" className="px-8 py-4 bg-white/15 border border-white/30 hover:bg-white/25 text-white font-bold rounded-2xl text-lg transition">
                 All Other Devices

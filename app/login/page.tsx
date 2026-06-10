@@ -56,7 +56,7 @@ export default function LoginPage() {
 
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold gradient-text-accent mb-2">DeviceDNA</h1>
+          <h1 className="text-3xl font-bold gradient-text-accent mb-2">LocalTech</h1>
           <p className="text-graphite-400 text-sm">Sign in to your dashboard</p>
         </div>
 
@@ -114,7 +114,10 @@ export default function LoginPage() {
             </button>
           </form>
 
-          <p className="text-center text-xs text-graphite-500 mt-6">
+          <p className="text-center text-xs text-graphite-500 mt-4">
+            <Link href="/forgot-password" className="text-graphite-400 hover:text-accent-400 transition">Forgot password?</Link>
+          </p>
+          <p className="text-center text-xs text-graphite-500 mt-2">
             Demo password for all accounts: <span className="text-graphite-300 font-mono">password123</span>
           </p>
           <p className="text-center text-xs text-graphite-500 mt-3">

@@ -3,6 +3,17 @@
 import { useEffect, useState } from "react";
 import { apiGet } from "@/lib/auth/client";
 
+type DeviceItem = {
+  id: string;
+  brand: string;
+  model: string;
+  color: string | null;
+  healthScore: number | null;
+  batteryHealth: number | null;
+  repairCount: number;
+  lastRepairDate: string | null;
+};
+
 type CustomerDashboard = {
   metrics: {
     totalDevices: number;
@@ -10,7 +21,7 @@ type CustomerDashboard = {
     activeWarranties: number;
     totalSpent: number;
   };
-  devices: { id: string; brand: string; model: string; color: string | null }[];
+  devices: DeviceItem[];
   recentRepairs: {
     id: string;
     issue: string;
@@ -99,17 +110,29 @@ export default function CustomerDashboard() {
           <p className="text-center text-graphite-500 py-10 text-sm">No devices registered yet</p>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {data.devices.map((device) => (
-              <div key={device.id} className="flex items-center gap-3 p-3 rounded-lg bg-white/5 border border-white/5 hover:border-accent-500/20 transition">
-                <div className="w-10 h-10 rounded-lg bg-graphite-800 flex items-center justify-center text-xl">
-                  {BRAND_ICONS[device.brand] ?? "📱"}
+            {data.devices.map((device) => {
+              const score = device.healthScore;
+              const scoreColor = score === null ? "#6b7280" : score >= 80 ? "#22c55e" : score >= 60 ? "#f59e0b" : "#ef4444";
+              const scoreLabel = score === null ? "No data" : score >= 80 ? "Good" : score >= 60 ? "Fair" : "Needs attention";
+              return (
+                <div key={device.id} className="flex items-center gap-3 p-3 rounded-lg bg-white/5 border border-white/5 hover:border-accent-500/20 transition">
+                  <div className="w-10 h-10 rounded-lg bg-graphite-800 flex items-center justify-center text-xl shrink-0">
+                    {BRAND_ICONS[device.brand] ?? "📱"}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold">{device.brand} {device.model}</p>
+                    {device.color && <p className="text-xs text-graphite-500 capitalize">{device.color}</p>}
+                    {device.repairCount > 0 && <p className="text-xs text-graphite-600 mt-0.5">{device.repairCount} repair{device.repairCount > 1 ? "s" : ""}</p>}
+                  </div>
+                  <div className="shrink-0 text-right">
+                    {score !== null && (
+                      <p className="text-lg font-bold" style={{ color: scoreColor }}>{score}%</p>
+                    )}
+                    <p className="text-xs font-medium" style={{ color: scoreColor }}>{scoreLabel}</p>
+                  </div>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold">{device.brand} {device.model}</p>
-                  {device.color && <p className="text-xs text-graphite-500 capitalize">{device.color}</p>}
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
