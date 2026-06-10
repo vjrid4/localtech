@@ -17,12 +17,14 @@ export async function GET(request: NextRequest) {
       include: {
         repairs: {
           where: {
-            status: { not: "COMPLETED" },
+            status: { notIn: ["COMPLETED", "DELIVERED", "CANCELLED"] },
           },
-          orderBy: {
-            createdAt: "asc",
+          include: {
+            device: { select: { id: true, brand: true, model: true, color: true } },
+            customer: { include: { user: { select: { name: true, phone: true } } } },
           },
-          take: 15,
+          orderBy: [{ priority: "desc" }, { createdAt: "asc" }],
+          take: 20,
         },
       },
     });
@@ -79,8 +81,14 @@ export async function GET(request: NextRequest) {
           priority: repair.priority,
           issue: repair.issue,
           status: repair.status,
+          diagnosis: repair.diagnosis,
+          solution: repair.solution,
           createdAt: repair.createdAt,
           estimatedCost: repair.estimatedCost,
+          finalCost: repair.finalCost,
+          device: repair.device,
+          customerName: repair.customer?.user?.name ?? null,
+          customerPhone: repair.customer?.user?.phone ?? null,
         })),
         specializations: technician.specialization,
       },

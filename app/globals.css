@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&family=Space+Mono:wght@400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap');
 @import "tailwindcss";
 
 @layer base {
@@ -154,7 +154,21 @@
   }
 }
 
+@layer components {
+  .hero-cinematic {
+    background: linear-gradient(135deg, #0f172a 0%, #134e2a 30%, #1e1b4b 60%, #0f172a 100%);
+    background-size: 400% 400%;
+    animation: heroShift 12s ease infinite;
+  }
+}
+
 @layer utilities {
+  @keyframes heroShift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+
   @keyframes fadeIn {
     from {
       opacity: 0;

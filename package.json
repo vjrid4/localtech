@@ -10,7 +10,7 @@
     "lint": "next lint",
     "db:push": "prisma db push",
     "db:generate": "prisma generate",
-    "db:seed": "node prisma/seed.ts",
+    "db:seed": "ts-node --project tsconfig.seed.json prisma/seed.ts",
     "studio": "prisma studio"
   },
   "keywords": [],
@@ -27,6 +27,7 @@
     "postcss": "^8.5.15",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
+    "recharts": "^3.8.1",
     "tailwindcss": "^4.3.0",
     "typescript": "^6.0.3",
     "zod": "^3.22.0"

@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
+import { prisma } from "@/lib/db/prisma";
+import { authenticateToken, createUnauthorizedResponse } from "@/lib/auth/middleware";
 
 const deviceSchema = z.object({
   customerId: z.string(),
-  brand: z.string(),
-  model: z.string(),
+  brand: z.string().min(1),
+  model: z.string().min(1),
   imei: z.string().optional(),
   serialNumber: z.string().optional(),
   color: z.string().optional(),
@@ -12,63 +14,75 @@ const deviceSchema = z.object({
   purchasePrice: z.number().optional(),
 });
 
-// GET all devices for a customer
 export async function GET(request: NextRequest) {
-  try {
-    const customerId = request.nextUrl.searchParams.get("customerId");
+  const auth = authenticateToken(request);
+  if (!auth.authenticated) return createUnauthorizedResponse();
 
-    if (!customerId) {
-      return NextResponse.json(
-        { success: false, message: "customerId is required" },
-        { status: 400 }
-      );
+  const customerId = request.nextUrl.searchParams.get("customerId");
+  if (!customerId) {
+    return NextResponse.json({ success: false, message: "customerId is required" }, { status: 400 });
+  }
+
+  try {
+    // Verify the customer belongs to caller's shop
+    const shop = await prisma.repairShop.findFirst({
+      where: { userId: auth.user!.userId },
+      select: { id: true },
+    });
+    if (!shop) return NextResponse.json({ success: false, message: "Shop not found" }, { status: 404 });
+
+    const customer = await prisma.customer.findFirst({
+      where: { id: customerId, repairShopId: shop.id },
+    });
+    if (!customer) {
+      return NextResponse.json({ success: false, message: "Customer not found" }, { status: 404 });
     }
 
-    // TODO: Fetch devices from database
-    // const devices = await prisma.device.findMany({...})
-
-    return NextResponse.json({
-      success: true,
-      data: [],
-      message: "Devices fetched successfully",
+    const devices = await prisma.device.findMany({
+      where: { customerId },
+      orderBy: { createdAt: "desc" },
     });
+
+    return NextResponse.json({ success: true, data: devices });
   } catch (error) {
-    return NextResponse.json(
-      {
-        success: false,
-        message: "Failed to fetch devices",
-        error: error instanceof Error ? error.message : "Unknown error",
-      },
-      { status: 500 }
-    );
+    return NextResponse.json({ success: false, message: "Failed to fetch devices" }, { status: 500 });
   }
 }
 
-// POST create new device
 export async function POST(request: NextRequest) {
+  const auth = authenticateToken(request);
+  if (!auth.authenticated) return createUnauthorizedResponse();
+
   try {
     const body = await request.json();
-    const device = deviceSchema.parse(body);
+    const data = deviceSchema.parse(body);
 
-    // TODO: Create device in database
-    // const newDevice = await prisma.device.create({...})
+    // Verify customer belongs to caller's shop
+    const shop = await prisma.repairShop.findFirst({
+      where: { userId: auth.user!.userId },
+      select: { id: true },
+    });
+    if (!shop) return NextResponse.json({ success: false, message: "Shop not found" }, { status: 404 });
 
-    return NextResponse.json(
-      {
-        success: true,
-        message: "Device created successfully",
-        data: device,
+    const customer = await prisma.customer.findFirst({
+      where: { id: data.customerId, repairShopId: shop.id },
+    });
+    if (!customer) {
+      return NextResponse.json({ success: false, message: "Customer not found" }, { status: 404 });
+    }
+
+    const device = await prisma.device.create({
+      data: {
+        ...data,
+        purchaseDate: data.purchaseDate ? new Date(data.purchaseDate) : undefined,
       },
-      { status: 201 }
-    );
+    });
+
+    return NextResponse.json({ success: true, data: device }, { status: 201 });
   } catch (error) {
-    return NextResponse.json(
-      {
-        success: false,
-        message: "Failed to create device",
-        error: error instanceof Error ? error.message : "Unknown error",
-      },
-      { status: 400 }
-    );
+    if (error instanceof z.ZodError) {
+      return NextResponse.json({ success: false, message: "Validation error", errors: error.errors }, { status: 400 });
+    }
+    return NextResponse.json({ success: false, message: "Failed to create device" }, { status: 500 });
   }
 }

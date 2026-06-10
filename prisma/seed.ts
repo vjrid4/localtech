@@ -155,7 +155,6 @@ async function main() {
       city: "Bangalore",
       state: "Karnataka",
       zipCode: "560001",
-      country: "India",
       rating: 4.7,
       isVerified: true,
     },
