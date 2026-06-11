@@ -1,18 +1,23 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { setToken, setUser, apiPost } from "@/lib/auth/client";
 import { track, identify } from "@/lib/analytics";
 
 type Tab = "customer" | "business";
+type BizType = "REPAIR_SHOP_OWNER" | "TECHNICIAN" | "SUPPLIER";
 
 const jk = { fontFamily: "'Plus Jakarta Sans', sans-serif" };
 
-export default function RegisterPage() {
+function RegisterContent() {
   const router = useRouter();
-  const [tab, setTab] = useState<Tab>("customer");
+  const params = useSearchParams();
+  const initialTab: Tab = params?.get("tab") === "business" ? "business" : "customer";
+  const typeParam = params?.get("type");
+  const initialBizType: BizType = typeParam === "TECHNICIAN" || typeParam === "SUPPLIER" ? typeParam : "REPAIR_SHOP_OWNER";
+  const [tab, setTab] = useState<Tab>(initialTab);
 
   // Customer form
   const [name, setName] = useState("");
@@ -27,7 +32,7 @@ export default function RegisterPage() {
   const [bizName, setBizName] = useState("");
   const [bizEmail, setBizEmail] = useState("");
   const [bizPhone, setBizPhone] = useState("");
-  const [bizType, setBizType] = useState<"REPAIR_SHOP_OWNER" | "TECHNICIAN" | "SUPPLIER">("REPAIR_SHOP_OWNER");
+  const [bizType, setBizType] = useState<BizType>(initialBizType);
   const [bizCity, setBizCity] = useState("");
   const [bizSent, setBizSent] = useState(false);
   const [bizLoading, setBizLoading] = useState(false);
@@ -190,5 +195,13 @@ export default function RegisterPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function RegisterPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center" style={{ background: "linear-gradient(135deg,#0a0a0a,#0d1a10,#0a0a0a)" }}><div className="w-8 h-8 border-2 border-green-500 border-t-transparent rounded-full animate-spin" /></div>}>
+      <RegisterContent />
+    </Suspense>
   );
 }

@@ -272,10 +272,10 @@ export default function LocalTechHomepage() {
                 reputation on LocalTech. No upfront fees. Start earning in 48 hours.
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
-                <Link href="/join-technician" className="inline-flex items-center justify-center gap-2 px-7 py-4 bg-green-500 hover:bg-green-400 text-white font-bold rounded-xl transition">
+                <Link href="/register?tab=business&type=TECHNICIAN" className="inline-flex items-center justify-center gap-2 px-7 py-4 bg-green-500 hover:bg-green-400 text-white font-bold rounded-xl transition">
                   Join as Technician →
                 </Link>
-                <Link href="/mobiles/dashboard" className="inline-flex items-center justify-center gap-2 px-7 py-4 bg-white/10 border border-white/20 hover:bg-white/15 text-white font-medium rounded-xl transition">
+                <Link href="/login" className="inline-flex items-center justify-center gap-2 px-7 py-4 bg-white/10 border border-white/20 hover:bg-white/15 text-white font-medium rounded-xl transition">
                   View Dashboard Demo
                 </Link>
               </div>
@@ -321,7 +321,7 @@ export default function LocalTechHomepage() {
           </div>
           <Reveal delay={300}>
             <div className="mt-12 text-center">
-              <Link href="/register-center" className="inline-flex items-center gap-2 px-8 py-4 bg-gray-900 hover:bg-gray-800 text-white font-bold rounded-xl transition">
+              <Link href="/register?tab=business&type=REPAIR_SHOP_OWNER" className="inline-flex items-center gap-2 px-8 py-4 bg-gray-900 hover:bg-gray-800 text-white font-bold rounded-xl transition">
                 Register Your Service Center →
               </Link>
             </div>
