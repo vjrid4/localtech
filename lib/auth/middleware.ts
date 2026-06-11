@@ -34,3 +34,18 @@ export async function authenticateToken(request: NextRequest) {
 export function createUnauthorizedResponse(message = "Unauthorized") {
   return NextResponse.json({ success: false, message }, { status: 401 });
 }
+
+/** Authenticate and require a specific role. Returns null on success, or an error response. */
+export async function requireRole(request: NextRequest, role: string) {
+  const auth = await authenticateToken(request);
+  if (!auth.authenticated) {
+    return { auth, errorResponse: createUnauthorizedResponse(auth.error ?? undefined) };
+  }
+  if (auth.user!.userType !== role) {
+    return {
+      auth,
+      errorResponse: NextResponse.json({ success: false, message: "Forbidden" }, { status: 403 }),
+    };
+  }
+  return { auth, errorResponse: null };
+}

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { setToken, setUser, apiPost } from "@/lib/auth/client";
+import { track, identify } from "@/lib/analytics";
 
 type Tab = "customer" | "business";
 
@@ -48,6 +49,8 @@ export default function RegisterPage() {
       });
       setToken(res.data.token);
       setUser({ id: res.data.id, email: res.data.email, name: res.data.name, userType: res.data.userType });
+      identify(res.data.id, { userType: "CUSTOMER" });
+      track("registration", { userType: "CUSTOMER" });
       router.push("/dashboard/customer");
     } catch (err: any) {
       setError(err.message || "Registration failed");
@@ -75,6 +78,7 @@ export default function RegisterPage() {
       });
       const data = await res.json();
       if (!data.success) throw new Error(data.message);
+      track("business_enquiry_submitted", { leadType: bizType });
       setBizSent(true);
     } catch (err: any) {
       setBizError(err.message || "Failed to submit enquiry");

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { setToken, setUser, apiPost } from "@/lib/auth/client";
+import { track, identify } from "@/lib/analytics";
 
 const DEMO_ACCOUNTS = [
   { label: "Shop Owner", email: "shop@example.com", color: "text-accent-500" },
@@ -27,7 +28,10 @@ export default function LoginPage() {
       const res = await apiPost<{ success: boolean; data: any }>("/api/auth/login", { email, password });
       setToken(res.data.token);
       setUser({ id: res.data.id, email: res.data.email, name: res.data.name, userType: res.data.userType });
+      identify(res.data.id, { userType: res.data.userType });
+      track("login", { userType: res.data.userType });
       const dest = {
+        ADMIN: "/admin",
         REPAIR_SHOP_OWNER: "/dashboard/shop",
         TECHNICIAN: "/dashboard/technician",
         CUSTOMER: "/dashboard/customer",

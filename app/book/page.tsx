@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import LocalTechNav from "@/components/LocalTechNav";
+import { track } from "@/lib/analytics";
 
 type DeviceType = "mobile" | "tv" | "laptop" | "appliance" | "cctv" | "solar";
 
@@ -68,6 +69,7 @@ export default function BookPage() {
       });
       const data = await res.json();
       if (!data.success) throw new Error(data.message);
+      track("booking_completed", { deviceType, reference: data.data.reference });
       router.push(`/book/success?ref=${data.data.reference}`);
     } catch (e: any) {
       setError(e.message || "Something went wrong. Please try again.");
@@ -93,7 +95,7 @@ export default function BookPage() {
               {DEVICE_TYPES.map((d) => (
                 <button
                   key={d.type}
-                  onClick={() => { setDeviceType(d.type); setStep(1); }}
+                  onClick={() => { setDeviceType(d.type); setStep(1); track("booking_started", { deviceType: d.type }); }}
                   className="flex flex-col items-center gap-2 p-4 rounded-2xl border-2 border-gray-100 hover:border-green-400 hover:bg-green-50 transition group"
                 >
                   <span className="text-3xl">{d.icon}</span>
