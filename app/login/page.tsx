@@ -6,6 +6,9 @@ import Link from "next/link";
 import { setToken, setUser, apiPost } from "@/lib/auth/client";
 import { track, identify } from "@/lib/analytics";
 
+// Demo quick-login only renders when NEXT_PUBLIC_DEMO_MODE=1 (local dev / staging)
+const DEMO_MODE = process.env.NEXT_PUBLIC_DEMO_MODE === "1";
+
 const DEMO_ACCOUNTS = [
   { label: "Shop Owner", email: "shop@example.com", color: "text-accent-500" },
   { label: "Technician", email: "tech@example.com", color: "text-blue-400" },
@@ -65,21 +68,23 @@ export default function LoginPage() {
         </div>
 
         <div className="glass rounded-2xl p-8">
-          {/* Demo account pills */}
-          <div className="mb-6">
-            <p className="text-xs text-graphite-500 mb-3 uppercase tracking-widest">Quick demo login</p>
-            <div className="grid grid-cols-2 gap-2">
-              {DEMO_ACCOUNTS.map((a) => (
-                <button
-                  key={a.email}
-                  onClick={() => quickLogin(a.email)}
-                  className={`text-xs px-3 py-2 rounded-lg border border-white/10 hover:border-white/20 transition ${a.color} bg-white/5 hover:bg-white/8 text-left`}
-                >
-                  {a.label}
-                </button>
-              ))}
+          {/* Demo account pills (dev/staging only) */}
+          {DEMO_MODE && (
+            <div className="mb-6">
+              <p className="text-xs text-graphite-500 mb-3 uppercase tracking-widest">Quick demo login</p>
+              <div className="grid grid-cols-2 gap-2">
+                {DEMO_ACCOUNTS.map((a) => (
+                  <button
+                    key={a.email}
+                    onClick={() => quickLogin(a.email)}
+                    className={`text-xs px-3 py-2 rounded-lg border border-white/10 hover:border-white/20 transition ${a.color} bg-white/5 hover:bg-white/8 text-left`}
+                  >
+                    {a.label}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
 
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
@@ -121,9 +126,11 @@ export default function LoginPage() {
           <p className="text-center text-xs text-graphite-500 mt-4">
             <Link href="/forgot-password" className="text-graphite-400 hover:text-accent-400 transition">Forgot password?</Link>
           </p>
-          <p className="text-center text-xs text-graphite-500 mt-2">
-            Demo password for all accounts: <span className="text-graphite-300 font-mono">password123</span>
-          </p>
+          {DEMO_MODE && (
+            <p className="text-center text-xs text-graphite-500 mt-2">
+              Demo password for all accounts: <span className="text-graphite-300 font-mono">password123</span>
+            </p>
+          )}
           <p className="text-center text-xs text-graphite-500 mt-3">
             New to LocalTech?{" "}
             <Link href="/register" className="text-accent-400 hover:text-accent-300 transition">Create an account</Link>
