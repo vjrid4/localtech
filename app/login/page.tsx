@@ -36,7 +36,7 @@ export default function LoginPage() {
       const dest = {
         ADMIN: "/admin",
         REPAIR_SHOP_OWNER: "/dashboard/shop",
-        TECHNICIAN: "/dashboard/technician",
+        TECHNICIAN: "/dashboard/technician/jobs",
         CUSTOMER: "/dashboard/customer",
         SUPPLIER: "/dashboard/supplier",
       }[res.data.userType as string] ?? "/dashboard";

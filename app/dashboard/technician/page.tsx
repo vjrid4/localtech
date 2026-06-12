@@ -158,7 +158,16 @@ export default function TechnicianDashboard() {
   useEffect(() => {
     apiGet<{ success: boolean; data: TechDashboard }>("/api/dashboard/technician")
       .then((r) => setData(r.data))
-      .catch((e) => setError(e.message))
+      .catch((e) => {
+        // Marketplace-only technicians have a TechnicianProfile but no
+        // shop-bound Technician row — their world is the Marketplace Jobs
+        // inbox, not the shop CRM queue. Send them there.
+        if (String(e.message).includes("Technician profile not found")) {
+          window.location.replace("/dashboard/technician/jobs");
+          return;
+        }
+        setError(e.message);
+      })
       .finally(() => setLoading(false));
   }, []);
 
