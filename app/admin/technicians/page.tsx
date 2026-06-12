@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { apiGet, apiPatch } from "@/lib/auth/client";
+import { apiGet, apiPatch, apiPost } from "@/lib/auth/client";
 
 type Tech = {
   id: string;
@@ -42,6 +42,13 @@ export default function AdminTechniciansPage() {
   async function update(id: string, changes: Partial<Pick<Tech, "isActive" | "verificationLevel" | "acceptingJobs">>) {
     await apiPatch("/api/admin/technicians", { id, ...changes });
     setTechs((prev) => prev.map((t) => (t.id === id ? { ...t, ...changes } as Tech : t)));
+  }
+
+  async function copyLoginLink(id: string) {
+    const res = await apiPost<{ success: boolean; data: { url: string } }>(
+      "/api/admin/technicians/reset-link", { technicianProfileId: id });
+    await navigator.clipboard.writeText(res.data.url);
+    alert("Set-password link copied — valid 24h. Send it to the technician on WhatsApp.");
   }
 
   return (
@@ -104,6 +111,12 @@ export default function AdminTechniciansPage() {
                   >
                     {LEVELS.map((l) => <option key={l} value={l}>{l}</option>)}
                   </select>
+                  {t.isActive && (
+                    <button onClick={() => copyLoginLink(t.id)}
+                      className="text-xs px-3 py-1.5 rounded-lg border border-white/10 text-graphite-300 hover:text-white transition">
+                      Login link
+                    </button>
+                  )}
                   {t.isActive ? (
                     <button onClick={() => update(t.id, { isActive: false })}
                       className="text-xs px-3 py-1.5 rounded-lg bg-red-500/15 text-red-400 border border-red-500/30 hover:bg-red-500/25 transition">

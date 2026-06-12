@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/db/prisma";
 import { logEvent } from "@/lib/events";
+import { createDispatch } from "@/lib/dispatch";
 
 const bookSchema = z.object({
   name: z.string().min(2),
@@ -60,6 +61,10 @@ export async function POST(request: NextRequest) {
       subjectId: booking.id,
       payload: { reference: booking.reference, deviceType: data.deviceType, city: data.city, pincode: data.pincode },
     });
+
+    // Fire the dispatch engine — wave 0 offers go out immediately.
+    // Failures never block the booking (createDispatch catches internally).
+    await createDispatch(booking.id);
 
     return NextResponse.json({ success: true, data: { reference: booking.reference } }, { status: 201 });
   } catch (error) {

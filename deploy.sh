@@ -64,6 +64,19 @@ if [ "${PIPESTATUS[0]}" -ne 0 ]; then
   exit 1
 fi
 
+# ── Sync host crontab from ops/crontab.tpl ──
+# Source of truth for scheduled jobs lives in the repo, not on the host.
+if [ -f "$REPO_PATH/ops/crontab.tpl" ]; then
+  echo "   Syncing crontab from ops/crontab.tpl..."
+  CRON_SECRET_VAL=$(grep -E '^CRON_SECRET=' "$ENV_FILE" | head -1 | cut -d= -f2- | tr -d '"' | tr -d "'")
+  if [ -z "$CRON_SECRET_VAL" ]; then
+    echo "   ⚠  CRON_SECRET not set in $ENV_FILE — skipping crontab sync"
+  else
+    CRON_SECRET="$CRON_SECRET_VAL" envsubst '${CRON_SECRET}' < "$REPO_PATH/ops/crontab.tpl" \
+      | crontab - && echo "   ✓ Crontab updated" || echo "   ⚠ Crontab install failed"
+  fi
+fi
+
 # Build new image with version tag
 echo "   Building: $IMAGE_NAME:$NEW_TAG"
 if ! docker build -t "$IMAGE_NAME:$NEW_TAG" -f Dockerfile . > /tmp/localtech-build.log 2>&1; then

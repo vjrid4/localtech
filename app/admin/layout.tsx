@@ -7,6 +7,7 @@ import { getUser, clearToken } from "@/lib/auth/client";
 
 const NAV = [
   { href: "/admin", icon: "🎛️", label: "Overview" },
+  { href: "/admin/dispatch", icon: "🚦", label: "Dispatch" },
   { href: "/admin/bookings", icon: "📅", label: "Bookings" },
   { href: "/admin/technicians", icon: "🔧", label: "Technicians" },
   { href: "/admin/leads", icon: "💼", label: "Business Leads" },

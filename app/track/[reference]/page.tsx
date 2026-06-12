@@ -64,6 +64,7 @@ export default function TrackPage() {
   const [data, setData] = useState<TrackData | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
+  const [approving, setApproving] = useState(false);
 
   useEffect(() => {
     if (!reference) return;
@@ -180,14 +181,38 @@ export default function TrackPage() {
               </div>
             )}
 
-            {/* Quote — appears once quoted */}
+            {/* Quote — appears once quoted; approve button while awaiting */}
             {data.job?.quoteAmount != null && data.job.quoteAmount > 0 && (
-              <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 mb-5 flex items-center justify-between">
-                <div>
-                  <p className="text-xs text-gray-400 uppercase tracking-widest font-semibold">Repair quote</p>
-                  <p className="text-xs text-gray-500 mt-1">No work starts without your approval</p>
+              <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 mb-5">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs text-gray-400 uppercase tracking-widest font-semibold">Repair quote</p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      {data.job.status === "QUOTED" ? "Approve to start the repair" : "Approved — repair can begin"}
+                    </p>
+                  </div>
+                  <p className="text-2xl font-bold text-gray-900" style={jk}>₹{(data.job.quoteAmount / 100).toLocaleString("en-IN")}</p>
                 </div>
-                <p className="text-2xl font-bold text-gray-900" style={jk}>₹{(data.job.quoteAmount / 100).toLocaleString("en-IN")}</p>
+                {data.job.status === "QUOTED" && (
+                  <button
+                    onClick={async () => {
+                      setApproving(true);
+                      try {
+                        const r = await fetch(`/api/track/${reference}/approve-quote`, { method: "POST" });
+                        const j = await r.json();
+                        if (j.success) {
+                          setData((prev) => prev && prev.job ? { ...prev, job: { ...prev.job, status: "QUOTE_APPROVED" } } : prev);
+                        }
+                      } finally {
+                        setApproving(false);
+                      }
+                    }}
+                    disabled={approving}
+                    className="mt-4 w-full py-3 bg-green-500 hover:bg-green-600 text-white font-bold rounded-xl transition disabled:opacity-50"
+                  >
+                    {approving ? "Approving…" : "Approve Quote ✓"}
+                  </button>
+                )}
               </div>
             )}
 
