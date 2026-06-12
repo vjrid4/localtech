@@ -24,7 +24,9 @@ function SuccessContent() {
         <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm mb-8">
           <p className="text-sm text-gray-500 mb-2">Your booking reference</p>
           <p className="text-3xl font-bold text-green-600 tracking-widest font-mono" style={jk}>{ref}</p>
-          <p className="text-xs text-gray-400 mt-2">Save this reference to track your repair status</p>
+          <Link href={`/track/${ref}`} className="inline-block mt-3 px-5 py-2.5 bg-green-500 hover:bg-green-600 text-white text-sm font-bold rounded-xl transition">
+            Track this repair →
+          </Link>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-10 text-sm">

@@ -1,12 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/db/prisma";
+import { logEvent } from "@/lib/events";
 
 const bookSchema = z.object({
   name: z.string().min(2),
   phone: z.string().min(6),
   email: z.string().email().optional(),
   city: z.string().optional(),
+  pincode: z.string().regex(/^\d{6}$/).optional(),
   deviceType: z.enum(["mobile", "tv", "laptop", "appliance", "cctv", "solar"]),
   deviceBrand: z.string().optional(),
   deviceModel: z.string().optional(),
@@ -42,12 +44,21 @@ export async function POST(request: NextRequest) {
         phone: data.phone,
         email: data.email,
         city: data.city,
+        pincode: data.pincode,
         deviceType: data.deviceType,
         deviceBrand: data.deviceBrand,
         deviceModel: data.deviceModel,
         issueDescription: data.issueDescription,
         status: "PENDING",
       },
+    });
+
+    await logEvent({
+      type: "booking.created",
+      actorType: "CUSTOMER",
+      subjectType: "booking",
+      subjectId: booking.id,
+      payload: { reference: booking.reference, deviceType: data.deviceType, city: data.city, pincode: data.pincode },
     });
 
     return NextResponse.json({ success: true, data: { reference: booking.reference } }, { status: 201 });

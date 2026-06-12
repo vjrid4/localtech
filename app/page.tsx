@@ -272,7 +272,7 @@ export default function LocalTechHomepage() {
                 reputation on LocalTech. No upfront fees. Start earning in 48 hours.
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
-                <Link href="/register?tab=business&type=TECHNICIAN" className="inline-flex items-center justify-center gap-2 px-7 py-4 bg-green-500 hover:bg-green-400 text-white font-bold rounded-xl transition">
+                <Link href="/technician/apply" className="inline-flex items-center justify-center gap-2 px-7 py-4 bg-green-500 hover:bg-green-400 text-white font-bold rounded-xl transition">
                   Join as Technician →
                 </Link>
                 <Link href="/login" className="inline-flex items-center justify-center gap-2 px-7 py-4 bg-white/10 border border-white/20 hover:bg-white/15 text-white font-medium rounded-xl transition">

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/db/prisma";
+import { logEvent } from "@/lib/events";
 
 const leadSchema = z.object({
   name: z.string().min(2),
@@ -24,6 +25,14 @@ export async function POST(request: NextRequest) {
         leadType: data.leadType,
         status: "NEW",
       },
+    });
+
+    await logEvent({
+      type: "lead.created",
+      actorType: "CUSTOMER",
+      subjectType: "lead",
+      subjectId: lead.id,
+      payload: { leadType: lead.leadType, city: lead.city },
     });
 
     return NextResponse.json({ success: true, data: { id: lead.id } }, { status: 201 });

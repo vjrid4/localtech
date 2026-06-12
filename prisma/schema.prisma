@@ -25,6 +25,7 @@ model User {
   technician    Technician?
   customer      Customer?
   supplier      Supplier?
+  technicianProfile TechnicianProfile?
 }
 
 enum UserType {
@@ -603,6 +604,162 @@ model BookingRequest {
   issueDescription String
   status        String   @default("PENDING") // "PENDING" | "ASSIGNED" | "CONVERTED" | "CANCELLED"
   repairId      String?  // set when converted to a real repair
+  pincode       String?  // captured at booking for dispatch matching
+  dispatch      Dispatch?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// PHASE-1 MARKETPLACE MODELS (90-day plan T1) — docs/EXECUTION-90-DAY.md §2
+// Marketplace technicians attach to User directly (not the shop-bound
+// Technician model) — independent technicians have no repairShop/branch.
+// ═══════════════════════════════════════════════════════════════════════════
+
+model TechnicianProfile {
+  id                String   @id @default(cuid())
+  userId            String   @unique
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  publicSlug        String   @unique
+  photoUrl          String?
+  bio               String?
+  yearsExperience   Int      @default(0)
+  languages         String[] @default(["telugu", "hindi"])
+  categories        String[] // mobile, tv, laptop, appliance, cctv, solar
+  pincodes          String[] // serviceable pincodes
+  homePincode       String?
+  whatsappNumber    String   // dispatch channel — required
+  verificationLevel String   @default("UNVERIFIED") // UNVERIFIED | ID_VERIFIED | FIELD_VERIFIED
+  kycStatus         String   @default("NOT_STARTED") // NOT_STARTED | PENDING | PASSED | FAILED | MANUAL_REVIEW
+  kycData           Json?
+  trustScore        Float    @default(50)
+  isActive          Boolean  @default(false) // admin-controlled go-live switch
+  acceptingJobs     Boolean  @default(true)  // technician-controlled
+  totalCompleted    Int      @default(0)
+  totalRedos        Int      @default(0)
+  offers            DispatchOffer[]
+  jobs              Job[]
+  reviews           JobReview[]
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([isActive, acceptingJobs])
+}
+
+model Pincode {
+  pincode  String  @id
+  office   String?
+  city     String
+  district String
+  state    String
+  lat      Float?
+  lng      Float?
+
+  @@index([district])
+  @@index([city])
+}
+
+model Dispatch {
+  id             String    @id @default(cuid())
+  bookingId      String    @unique
+  booking        BookingRequest @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  status         String    @default("PENDING") // PENDING | OFFERED | ASSIGNED | EXPIRED_TO_MANUAL | CANCELLED
+  wave           Int       @default(0)
+  assignedTechId String?
+  assignedAt     DateTime?
+  offers         DispatchOffer[]
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([status, createdAt])
+}
+
+model DispatchOffer {
+  id           String    @id @default(cuid())
+  dispatchId   String
+  dispatch     Dispatch  @relation(fields: [dispatchId], references: [id], onDelete: Cascade)
+  technicianId String
+  technician   TechnicianProfile @relation(fields: [technicianId], references: [id], onDelete: Cascade)
+  status       String    @default("SENT") // SENT | VIEWED | ACCEPTED | DECLINED | EXPIRED
+  sentAt       DateTime  @default(now())
+  respondedAt  DateTime?
+  expiresAt    DateTime
+
+  @@unique([dispatchId, technicianId])
+  @@index([technicianId, status])
+}
+
+model Job {
+  id              String    @id @default(cuid())
+  reference       String    @unique // reuses LT-XXXXXXX from booking
+  bookingId       String    @unique
+  technicianId    String
+  technician      TechnicianProfile @relation(fields: [technicianId], references: [id])
+  status          String    @default("ASSIGNED") // ASSIGNED | EN_ROUTE | DIAGNOSED | QUOTED | QUOTE_APPROVED | IN_PROGRESS | COMPLETED | CANCELLED | DISPUTED
+  quoteAmount     Int?      // paise
+  quoteApprovedAt DateTime?
+  completedAt     DateTime?
+  cancelReason    String?
+  commissionDue   Int       @default(0) // paise
+  statusHistory   Json[]    @default([])
+  review          JobReview?
+  warranty        JobWarranty?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([technicianId, status])
+  @@index([status, createdAt])
+}
+
+model JobReview {
+  id           String   @id @default(cuid())
+  jobId        String   @unique
+  job          Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  technicianId String
+  technician   TechnicianProfile @relation(fields: [technicianId], references: [id])
+  rating       Int
+  text         String?
+  isPublic     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+
+  @@index([technicianId, isPublic])
+}
+
+model JobWarranty {
+  id        String   @id @default(cuid())
+  jobId     String   @unique
+  job       Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  startsAt  DateTime @default(now())
+  expiresAt DateTime
+  status    String   @default("ACTIVE") // ACTIVE | EXPIRED | CLAIMED | VOID
+  claims    JobWarrantyClaim[]
+}
+
+model JobWarrantyClaim {
+  id          String    @id @default(cuid())
+  warrantyId  String
+  warranty    JobWarranty @relation(fields: [warrantyId], references: [id], onDelete: Cascade)
+  description String
+  status      String    @default("OPEN") // OPEN | REDO_SCHEDULED | RESOLVED | REJECTED
+  redoJobId   String?
+  resolvedAt  DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@index([status])
+}
+
+// Append-only domain event log — every metric, trust score, and future ML
+// training set derives from this table. Never update or delete rows.
+model Event {
+  id          BigInt   @id @default(autoincrement())
+  type        String   // dot notation: "booking.created", "offer.accepted"
+  actorType   String   // CUSTOMER | TECHNICIAN | ADMIN | SYSTEM
+  actorId     String?
+  subjectType String   // "booking", "job", "dispatch", "technician"
+  subjectId   String
+  payload     Json?
+  createdAt   DateTime @default(now())
+
+  @@index([subjectType, subjectId])
+  @@index([type, createdAt])
 }
