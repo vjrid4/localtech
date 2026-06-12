@@ -52,7 +52,13 @@ export async function GET(
           user: { select: { name: true } },
         },
       },
-      warranty: { select: { startsAt: true, expiresAt: true, status: true } },
+      warranty: {
+        select: {
+          startsAt: true, expiresAt: true, status: true,
+          claims: { select: { status: true, createdAt: true }, orderBy: { createdAt: "desc" }, take: 1 },
+        },
+      },
+      review: { select: { rating: true } },
     },
   });
 
@@ -75,6 +81,7 @@ export async function GET(
                 }
               : null,
             warranty: job.warranty,
+            review: job.review,
           }
         : null,
     },

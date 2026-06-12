@@ -30,7 +30,8 @@ type TrackData = {
     quoteAmount: number | null;
     completedAt: string | null;
     technician: { name: string; slug: string; photoUrl: string | null; trustScore: number; totalCompleted: number } | null;
-    warranty: { startsAt: string; expiresAt: string; status: string } | null;
+    warranty: { startsAt: string; expiresAt: string; status: string; claims?: { status: string; createdAt: string }[] } | null;
+    review: { rating: number } | null;
   } | null;
 };
 
@@ -65,6 +66,12 @@ export default function TrackPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
   const [approving, setApproving] = useState(false);
+  const [stars, setStars] = useState(0);
+  const [reviewText, setReviewText] = useState("");
+  const [submittingReview, setSubmittingReview] = useState(false);
+  const [claimOpen, setClaimOpen] = useState(false);
+  const [claimText, setClaimText] = useState("");
+  const [claimMsg, setClaimMsg] = useState("");
 
   useEffect(() => {
     if (!reference) return;
@@ -161,9 +168,10 @@ export default function TrackPage() {
               </div>
             )}
 
-            {/* Technician card — appears once assigned */}
+            {/* Technician card — appears once assigned; links to public profile */}
             {data.job?.technician && (
-              <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 mb-5 flex items-center gap-4">
+              <Link href={`/t/${data.job.technician.slug}`}
+                className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 mb-5 flex items-center gap-4 hover:border-green-200 transition">
                 {data.job.technician.photoUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={data.job.technician.photoUrl} alt="" className="w-14 h-14 rounded-full object-cover" />
@@ -178,7 +186,8 @@ export default function TrackPage() {
                     ⭐ {data.job.technician.trustScore}/100 · {data.job.technician.totalCompleted} repairs · ID verified
                   </p>
                 </div>
-              </div>
+                <span className="text-gray-300 text-sm shrink-0">›</span>
+              </Link>
             )}
 
             {/* Quote — appears once quoted; approve button while awaiting */}
@@ -216,6 +225,63 @@ export default function TrackPage() {
               </div>
             )}
 
+            {/* Review — appears once completed, once per repair */}
+            {data.job?.status === "COMPLETED" && (
+              <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 mb-5">
+                {data.job.review ? (
+                  <div className="text-center">
+                    <p className="text-2xl mb-1">{"★".repeat(data.job.review.rating)}{"☆".repeat(5 - data.job.review.rating)}</p>
+                    <p className="text-sm text-gray-500">Thanks for rating this repair!</p>
+                  </div>
+                ) : (
+                  <>
+                    <h2 className="font-bold mb-3 text-center" style={jk}>How was {data.job.technician?.name ?? "your technician"}&apos;s service?</h2>
+                    <div className="flex justify-center gap-2 mb-3">
+                      {[1, 2, 3, 4, 5].map((n) => (
+                        <button key={n} onClick={() => setStars(n)} aria-label={`${n} stars`}
+                          className={`text-3xl transition-transform active:scale-90 ${n <= stars ? "" : "grayscale opacity-40"}`}>
+                          ⭐
+                        </button>
+                      ))}
+                    </div>
+                    {stars > 0 && (
+                      <>
+                        <textarea
+                          value={reviewText}
+                          onChange={(e) => setReviewText(e.target.value)}
+                          rows={2}
+                          placeholder={stars <= 2 ? "What went wrong? We'll make it right." : "Anything you'd like to share? (optional)"}
+                          className="w-full px-3 py-2.5 rounded-xl border border-gray-200 focus:border-green-500 focus:outline-none text-sm mb-3"
+                        />
+                        <button
+                          onClick={async () => {
+                            setSubmittingReview(true);
+                            try {
+                              const r = await fetch(`/api/track/${reference}/review`, {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({ rating: stars, text: reviewText.trim() || undefined }),
+                              });
+                              const j = await r.json();
+                              if (j.success) {
+                                setData((prev) => prev && prev.job ? { ...prev, job: { ...prev.job, review: { rating: stars } } } : prev);
+                              }
+                            } finally {
+                              setSubmittingReview(false);
+                            }
+                          }}
+                          disabled={submittingReview}
+                          className="w-full py-3 bg-green-500 hover:bg-green-600 text-white font-bold rounded-xl transition disabled:opacity-50"
+                        >
+                          {submittingReview ? "Submitting…" : "Submit Rating"}
+                        </button>
+                      </>
+                    )}
+                  </>
+                )}
+              </div>
+            )}
+
             {/* Warranty card — appears once completed */}
             {data.job?.warranty && (
               <div className="bg-green-50 border border-green-200 rounded-2xl p-5 mb-5">
@@ -227,6 +293,52 @@ export default function TrackPage() {
                   Covered until {new Date(data.job.warranty.expiresAt).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })}.
                   Same issue again? We fix it free.
                 </p>
+
+                {(data.job.warranty.claims?.length ?? 0) > 0 || claimMsg ? (
+                  <p className="mt-3 text-sm font-semibold text-green-800 bg-white/70 rounded-xl px-3 py-2.5">
+                    {claimMsg || "🔧 Claim received — our team will call you to schedule the free redo."}
+                  </p>
+                ) : new Date(data.job.warranty.expiresAt) > new Date() ? (
+                  claimOpen ? (
+                    <div className="mt-3">
+                      <textarea
+                        value={claimText}
+                        onChange={(e) => setClaimText(e.target.value)}
+                        rows={2}
+                        placeholder="Describe what's wrong again…"
+                        className="w-full px-3 py-2.5 rounded-xl border border-green-200 focus:border-green-500 focus:outline-none text-sm mb-2 bg-white"
+                      />
+                      <div className="flex gap-2">
+                        <button
+                          onClick={async () => {
+                            const r = await fetch(`/api/track/${reference}/claim`, {
+                              method: "POST",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({ description: claimText.trim() }),
+                            });
+                            const j = await r.json();
+                            if (j.success) {
+                              setClaimMsg("🔧 Claim received — our team will call you to schedule the free redo.");
+                              setClaimOpen(false);
+                            } else {
+                              setClaimMsg(j.message);
+                            }
+                          }}
+                          disabled={claimText.trim().length < 10}
+                          className="flex-1 py-2.5 bg-green-600 hover:bg-green-700 text-white text-sm font-bold rounded-xl transition disabled:opacity-50"
+                        >
+                          File claim
+                        </button>
+                        <button onClick={() => setClaimOpen(false)} className="px-4 py-2.5 text-sm text-green-700">Cancel</button>
+                      </div>
+                    </div>
+                  ) : (
+                    <button onClick={() => setClaimOpen(true)}
+                      className="mt-3 w-full py-2.5 bg-white border border-green-300 text-green-700 text-sm font-bold rounded-xl hover:bg-green-100 transition">
+                      Same issue again? File a free redo claim
+                    </button>
+                  )
+                ) : null}
               </div>
             )}
 
