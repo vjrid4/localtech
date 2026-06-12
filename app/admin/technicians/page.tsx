@@ -44,6 +44,18 @@ export default function AdminTechniciansPage() {
     setTechs((prev) => prev.map((t) => (t.id === id ? { ...t, ...changes } as Tech : t)));
   }
 
+  async function editAreas(t: Tech) {
+    const pinsRaw = prompt("Serviceable pincodes (comma separated, 6 digits):", t.pincodes.join(", "));
+    if (pinsRaw === null) return;
+    const pincodes = pinsRaw.split(/[,\s]+/).map((p) => p.trim()).filter(Boolean);
+    if (pincodes.some((p) => !/^\d{6}$/.test(p))) { alert("Each pincode must be 6 digits."); return; }
+    const catsRaw = prompt("Categories (mobile, tv, laptop, appliance, cctv, solar):", t.categories.join(", "));
+    if (catsRaw === null) return;
+    const categories = catsRaw.split(/[,\s]+/).map((c) => c.trim().toLowerCase()).filter(Boolean);
+    await apiPatch("/api/admin/technicians", { id: t.id, pincodes, categories });
+    load(filter);
+  }
+
   async function copyLoginLink(id: string) {
     const res = await apiPost<{ success: boolean; data: { url: string } }>(
       "/api/admin/technicians/reset-link", { technicianProfileId: id });
@@ -104,6 +116,10 @@ export default function AdminTechniciansPage() {
                   </div>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
+                  <button onClick={() => editAreas(t)}
+                    className="text-xs px-3 py-1.5 rounded-lg border border-white/10 text-graphite-300 hover:text-white transition">
+                    Edit areas
+                  </button>
                   <select
                     value={t.verificationLevel}
                     onChange={(e) => update(t.id, { verificationLevel: e.target.value })}

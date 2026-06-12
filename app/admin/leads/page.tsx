@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { apiGet, apiPatch } from "@/lib/auth/client";
+import { apiGet, apiPatch, apiPost } from "@/lib/auth/client";
 
 type Lead = {
   id: string;
@@ -61,6 +61,19 @@ export default function AdminLeadsPage() {
     setEditingNotes(null);
   }
 
+  async function convert(id: string) {
+    if (!confirm("Create an account for this lead? You'll get a set-password link to send them.")) return;
+    try {
+      const res = await apiPost<{ success: boolean; data: { loginUrl: string; next: string } }>(
+        "/api/admin/leads/convert", { leadId: id });
+      await navigator.clipboard.writeText(res.data.loginUrl);
+      alert(`✅ Account created — set-password link copied to clipboard (valid 24h).\n\nNext: ${res.data.next}`);
+      load(filter);
+    } catch (e: unknown) {
+      alert(e instanceof Error ? e.message : "Conversion failed");
+    }
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-3">
@@ -102,6 +115,12 @@ export default function AdminLeadsPage() {
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
+                  {l.status !== "ONBOARDED" && (
+                    <button onClick={() => convert(l.id)}
+                      className="text-xs px-3 py-1.5 rounded-lg bg-accent-500 text-graphite-950 font-bold hover:bg-accent-400 transition">
+                      Convert to account
+                    </button>
+                  )}
                   <span className={`text-xs px-2 py-1 rounded-full ${STATUS_STYLE[l.status] ?? "bg-white/5 text-graphite-400"}`}>{l.status}</span>
                   <select
                     value={l.status}

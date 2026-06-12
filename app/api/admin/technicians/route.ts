@@ -28,6 +28,8 @@ const patchSchema = z.object({
   isActive: z.boolean().optional(),
   verificationLevel: z.enum(["UNVERIFIED", "ID_VERIFIED", "FIELD_VERIFIED"]).optional(),
   acceptingJobs: z.boolean().optional(),
+  categories: z.array(z.enum(["mobile", "tv", "laptop", "appliance", "cctv", "solar"])).min(1).optional(),
+  pincodes: z.array(z.string().regex(/^\d{6}$/)).max(20).optional(),
 });
 
 export async function PATCH(request: NextRequest) {
