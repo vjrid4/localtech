@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { apiGet, apiPatch } from "@/lib/auth/client";
+import { apiGet, apiPatch, apiPost } from "@/lib/auth/client";
 
 type Booking = {
   id: string;
@@ -16,6 +16,7 @@ type Booking = {
   issueDescription: string;
   status: string;
   createdAt: string;
+  dispatch: { id: string; status: string } | null;
 };
 
 const STATUSES = ["PENDING", "ASSIGNED", "CONVERTED", "CANCELLED"];
@@ -49,6 +50,16 @@ export default function AdminBookingsPage() {
   async function updateStatus(id: string, status: string) {
     await apiPatch("/api/admin/bookings", { id, status });
     setBookings((prev) => prev.map((b) => (b.id === id ? { ...b, status } : b)));
+  }
+
+  async function sendToDispatch(id: string) {
+    try {
+      await apiPost("/api/admin/bookings/dispatch", { bookingId: id });
+      alert("✅ Dispatched — offers are going out. Manage it on the Dispatch board.");
+      load(filter);
+    } catch (e: unknown) {
+      alert(e instanceof Error ? e.message : "Dispatch failed");
+    }
   }
 
   return (
@@ -92,6 +103,15 @@ export default function AdminBookingsPage() {
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
+                  {!b.dispatch && !["CONVERTED", "CANCELLED"].includes(b.status) && (
+                    <button onClick={() => sendToDispatch(b.id)}
+                      className="text-xs px-3 py-1.5 rounded-lg bg-accent-500 text-graphite-950 font-bold hover:bg-accent-400 transition">
+                      Send to dispatch
+                    </button>
+                  )}
+                  {b.dispatch && (
+                    <span className="text-xs text-graphite-500">🚦 {b.dispatch.status.replace(/_/g, " ").toLowerCase()}</span>
+                  )}
                   <span className={`text-xs px-2 py-1 rounded-full ${STATUS_STYLE[b.status] ?? "bg-white/5 text-graphite-400"}`}>{b.status}</span>
                   <select
                     value={b.status}

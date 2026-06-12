@@ -10,6 +10,7 @@ export async function GET(request: NextRequest) {
   const status = request.nextUrl.searchParams.get("status");
   const bookings = await prisma.bookingRequest.findMany({
     where: status ? { status } : undefined,
+    include: { dispatch: { select: { id: true, status: true } } },
     orderBy: { createdAt: "desc" },
     take: 200,
   });
