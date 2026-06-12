@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db/prisma";
 import { requireRole } from "@/lib/auth/middleware";
 import { createDispatch } from "@/lib/dispatch";
 import { logEvent } from "@/lib/events";
+import { generateReference } from "@/lib/reference";
 
 export async function GET(request: NextRequest) {
   const { errorResponse } = await requireRole(request, "ADMIN");
@@ -76,9 +77,7 @@ export async function PATCH(request: NextRequest) {
       const original = await prisma.bookingRequest.findUniqueOrThrow({
         where: { id: claim.warranty.job.bookingId },
       });
-      const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-      let reference = "LT-";
-      for (let i = 0; i < 7; i++) reference += chars[Math.floor(Math.random() * chars.length)];
+      const reference = generateReference();
 
       const redoBooking = await prisma.bookingRequest.create({
         data: {

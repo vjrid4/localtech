@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { isCronAuthorized } from "@/lib/cron-auth";
 import { prisma } from "@/lib/db/prisma";
 import { logEvent } from "@/lib/events";
 
@@ -21,10 +22,7 @@ const PRIOR_WEIGHT = 5;
 const REDO_PENALTY = 10;
 
 export async function GET(request: NextRequest) {
-  const secret = process.env.CRON_SECRET;
-  const provided =
-    request.nextUrl.searchParams.get("secret") ?? request.headers.get("x-cron-secret");
-  if (!secret || provided !== secret) {
+  if (!isCronAuthorized(request)) {
     return NextResponse.json({ success: false }, { status: 401 });
   }
 

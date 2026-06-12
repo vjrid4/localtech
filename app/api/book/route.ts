@@ -3,6 +3,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/db/prisma";
 import { logEvent } from "@/lib/events";
 import { createDispatch } from "@/lib/dispatch";
+import { generateReference } from "@/lib/reference";
 
 const bookSchema = z.object({
   name: z.string().min(2),
@@ -16,25 +17,18 @@ const bookSchema = z.object({
   issueDescription: z.string().min(5),
 });
 
-function generateRef(): string {
-  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-  let ref = "LT-";
-  for (let i = 0; i < 7; i++) ref += chars[Math.floor(Math.random() * chars.length)];
-  return ref;
-}
-
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const data = bookSchema.parse(body);
 
     // Deduplicate references (extremely rare collision, but safe)
-    let reference = generateRef();
+    let reference = generateReference();
     let attempts = 0;
     while (attempts < 5) {
       const exists = await prisma.bookingRequest.findUnique({ where: { reference } });
       if (!exists) break;
-      reference = generateRef();
+      reference = generateReference();
       attempts++;
     }
 

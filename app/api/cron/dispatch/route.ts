@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { isCronAuthorized } from "@/lib/cron-auth";
 import { escalateStale } from "@/lib/dispatch";
 
 export const dynamic = "force-dynamic";
@@ -8,11 +9,7 @@ export const dynamic = "force-dynamic";
  * (ops/crontab.tpl, synced by deploy.sh). Protected by CRON_SECRET.
  */
 export async function GET(request: NextRequest) {
-  const secret = process.env.CRON_SECRET;
-  const provided =
-    request.nextUrl.searchParams.get("secret") ?? request.headers.get("x-cron-secret");
-
-  if (!secret || provided !== secret) {
+  if (!isCronAuthorized(request)) {
     return NextResponse.json({ success: false }, { status: 401 });
   }
 
