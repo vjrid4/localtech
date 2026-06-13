@@ -15,6 +15,7 @@ const NAV = {
     { href: "/dashboard/shop/billing", icon: "🧾", label: "Billing" },
   ],
   TECHNICIAN: [
+    { href: "/dashboard/technician/onboarding", icon: "🪪", label: "Onboarding / KYC" },
     { href: "/dashboard/technician/jobs", icon: "🔧", label: "Marketplace Jobs" },
     { href: "/dashboard/technician", icon: "📋", label: "Shop Jobs" },
     { href: "/dashboard/technician/knowledge", icon: "🧠", label: "Knowledge" },
