@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { createHmac, timingSafeEqual } from "crypto";
 import { prisma } from "@/lib/db/prisma";
 import { assignTechnician } from "@/lib/dispatch";
 import { logEvent } from "@/lib/events";
@@ -15,9 +16,37 @@ export const dynamic = "force-dynamic";
  *   anything else → logged as inbound for manual follow-up
  *
  * Configure in BSP dashboard:
- *   Webhook URL: https://localtech.in/api/webhooks/whatsapp
- *   Verify token: value of WHATSAPP_WEBHOOK_SECRET in .env
+ *   Webhook URL:   https://localtech.in/api/webhooks/whatsapp
+ *   Verify token:  WHATSAPP_WEBHOOK_SECRET (any strong random string, e.g. openssl rand -hex 32)
+ *
+ * Security: every POST is HMAC-SHA256 verified against WHATSAPP_WEBHOOK_SECRET
+ * before any DB work. Requests without a valid signature are rejected with 401.
+ * When the env var is absent (local dev), a console warning is printed and the
+ * endpoint operates in open mode — set the secret before going live.
+ *
+ * BSP signature headers supported:
+ *   AiSensy  → x-aisensy-signature   (hex HMAC-SHA256 of raw body)
+ *   Interakt → x-interakt-signature  (hex HMAC-SHA256 of raw body)
+ *   Meta     → x-hub-signature-256   (format: "sha256=<hex>")
  */
+
+/** Verify HMAC-SHA256 of rawBody against the BSP signature header. */
+function verifySignature(request: NextRequest, rawBody: string, secret: string): boolean {
+  const expected = createHmac("sha256", secret).update(rawBody).digest("hex");
+
+  // Read whichever header the BSP sends
+  const raw =
+    request.headers.get("x-aisensy-signature") ??
+    request.headers.get("x-interakt-signature") ??
+    request.headers.get("x-hub-signature-256")?.replace(/^sha256=/, "") ??
+    "";
+
+  if (!raw) return false;
+
+  // Constant-time comparison — lengths must match first to avoid throws
+  if (raw.length !== expected.length) return false;
+  return timingSafeEqual(Buffer.from(raw), Buffer.from(expected));
+}
 
 /** Extract phone + text from AiSensy / Interakt / Meta inbound payload shapes. */
 function parseInbound(body: Record<string, unknown>): { phone: string; text: string } | null {
@@ -74,13 +103,34 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  // Optional webhook secret validation (AiSensy sends x-aisensy-signature header)
-  // We skip strict HMAC here — the inbound path is read-only except for job acceptance,
-  // which is idempotent and safe (atomic DB claim prevents double-accept).
+  // Read raw body text first — required for HMAC verification before JSON parsing.
+  let rawBody: string;
+  try {
+    rawBody = await request.text();
+  } catch {
+    return NextResponse.json({ ok: false }, { status: 400 });
+  }
 
+  // ── Signature verification ─────────────────────────────────────────────────
+  const secret = process.env.WHATSAPP_WEBHOOK_SECRET;
+  if (secret) {
+    if (!verifySignature(request, rawBody, secret)) {
+      console.warn("[wa:webhook] signature mismatch — rejected");
+      return NextResponse.json({ ok: false }, { status: 401 });
+    }
+  } else {
+    // No secret configured — safe in local dev, but must be set in production.
+    if (process.env.NODE_ENV === "production") {
+      console.error("[wa:webhook] WHATSAPP_WEBHOOK_SECRET not set in production — rejecting all inbound");
+      return NextResponse.json({ ok: false }, { status: 401 });
+    }
+    console.warn("[wa:webhook] WHATSAPP_WEBHOOK_SECRET not set — running in open mode (dev only)");
+  }
+
+  // ── Parse body ─────────────────────────────────────────────────────────────
   let body: Record<string, unknown>;
   try {
-    body = await request.json();
+    body = JSON.parse(rawBody);
   } catch {
     return NextResponse.json({ ok: false }, { status: 400 });
   }
@@ -101,7 +151,6 @@ export async function POST(request: NextRequest) {
   });
 
   if (!profile) {
-    // Unknown sender — log and ignore
     await logEvent({
       type: "whatsapp.inbound_unknown",
       actorType: "SYSTEM",
@@ -152,7 +201,6 @@ export async function POST(request: NextRequest) {
     });
 
     if (!job) {
-      // Lost the race — another technician accepted first
       await sendWhatsApp({
         to: inbound.phone,
         template: "job_missed",
@@ -161,15 +209,11 @@ export async function POST(request: NextRequest) {
         subjectId: profile.id,
       });
     }
-    // job_won is sent by assignTechnician via the technician_assigned flow.
-    // The technician themselves doesn't need a separate won message since
-    // they'll see the customer contact in their job inbox.
 
     return NextResponse.json({ ok: true });
   }
 
-  // Anything else — not handled by automation
-  // In production, forward context to the founder's phone or inbox.
+  // Anything else — log for manual follow-up
   await logEvent({
     type: "whatsapp.inbound_unhandled",
     actorType: "TECHNICIAN",
