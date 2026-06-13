@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db/prisma";
 import { logEvent } from "@/lib/events";
 import { createDispatch } from "@/lib/dispatch";
 import { generateReference } from "@/lib/reference";
+import { sendWhatsApp } from "@/lib/whatsapp";
 
 const bookSchema = z.object({
   name: z.string().min(2),
@@ -54,6 +55,16 @@ export async function POST(request: NextRequest) {
       subjectType: "booking",
       subjectId: booking.id,
       payload: { reference: booking.reference, deviceType: data.deviceType, city: data.city, pincode: data.pincode },
+    });
+
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://localtech.in";
+    // Confirm to customer (non-blocking)
+    void sendWhatsApp({
+      to: booking.phone,
+      template: "booking_confirmed",
+      params: { name: booking.name, reference: booking.reference, trackUrl: `${appUrl}/track/${booking.reference}` },
+      subjectType: "booking",
+      subjectId: booking.id,
     });
 
     // Fire the dispatch engine — wave 0 offers go out immediately.
