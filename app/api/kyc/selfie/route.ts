@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 import { z } from "zod";
 import { prisma } from "@/lib/db/prisma";
 import { requireRole } from "@/lib/auth/middleware";
@@ -104,7 +105,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (!result.isMatch) {
-      await prisma.technicianProfile.update({ where: { id: profile.id }, data: { kycData: updatedData } });
+      await prisma.technicianProfile.update({ where: { id: profile.id }, data: { kycData: updatedData as Prisma.InputJsonValue } });
       if (retries + 1 >= 3) {
         await prisma.technicianProfile.update({ where: { id: profile.id }, data: { kycStatus: "MANUAL_REVIEW" } });
         return NextResponse.json({ success: false, message: "Face match unsuccessful after 3 attempts. Our team will contact you within 24 hours." }, { status: 422 });
@@ -118,7 +119,7 @@ export async function POST(request: NextRequest) {
       data: {
         kycStatus: "PASSED",
         verificationLevel: "ID_VERIFIED",
-        kycData: updatedData,
+        kycData: updatedData as Prisma.InputJsonValue,
       },
     });
 
