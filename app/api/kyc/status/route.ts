@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db/prisma";
 import { requireRole } from "@/lib/auth/middleware";
+import { QUIZ_RETRY_DAYS } from "@/lib/quiz/questions";
 
 export async function GET(request: NextRequest) {
   const { auth, errorResponse } = await requireRole(request, "TECHNICIAN");
@@ -29,6 +30,13 @@ export async function GET(request: NextRequest) {
     selfieVerified: profile.kycStatus === "PASSED",
   };
 
+  // Quiz state
+  const quizStatus = (data.quizStatus as string) ?? "NOT_STARTED";
+  const quizLastAttemptAt = (data.quizLastAttemptAt as string) ?? null;
+  const quizRetryEligibleAt = quizLastAttemptAt && quizStatus === "FAILED"
+    ? new Date(new Date(quizLastAttemptAt).getTime() + QUIZ_RETRY_DAYS * 24 * 60 * 60 * 1000).toISOString()
+    : null;
+
   return NextResponse.json({
     success: true,
     data: {
@@ -43,6 +51,13 @@ export async function GET(request: NextRequest) {
       aadhaarName: (data.aadhaarName as string) ?? null,
       panNumber: (data.panNumber as string) ?? null,
       faceMatchScore: (data.faceMatchScore as number) ?? null,
+      // Quiz
+      quizStatus,
+      quizScore: (data.quizScore as number) ?? null,
+      quizTotal: (data.quizTotal as number) ?? null,
+      quizAttempts: (data.quizAttempts as number) ?? 0,
+      quizLastAttemptAt,
+      quizRetryEligibleAt,
     },
   });
 }
