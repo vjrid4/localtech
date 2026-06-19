@@ -58,7 +58,7 @@ docker run --rm \
   --env-file "$ENV_FILE" \
   --network=host \
   -v "$REPO_PATH/prisma:/app/prisma" \
-  node:20-bookworm-slim sh -c "apt-get update >/dev/null 2>&1 && apt-get install -y openssl >/dev/null 2>&1 && npm install -g prisma@5 >/dev/null 2>&1 && prisma db push --skip-generate --schema=/app/prisma/schema.prisma" 2>&1 | sed 's/^/   /'
+  node:20-bookworm-slim sh -c "apt-get update >/dev/null 2>&1 && apt-get install -y openssl >/dev/null 2>&1 && npm install -g prisma@5 >/dev/null 2>&1 && prisma db push --accept-data-loss --skip-generate --schema=/app/prisma/schema.prisma" 2>&1 | sed 's/^/   /'
 if [ "${PIPESTATUS[0]}" -ne 0 ]; then
   echo "   ❌ Schema sync failed — aborting deploy"
   exit 1
