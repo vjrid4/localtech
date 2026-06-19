@@ -1,11 +1,11 @@
 /**
  * Thin email sender.
- * In dev (no SMTP_HOST): logs the email to console.
- * In prod: sends via SMTP using the env vars below.
  *
- * Required env vars for real sending:
- *   SMTP_HOST, SMTP_PORT (default 587), SMTP_USER, SMTP_PASS
- *   SMTP_FROM  (default: "LocalTech <noreply@localtech.in>")
+ * Currently logs to console (no SMTP configured).
+ * To enable real sending:
+ *   1. npm i nodemailer @types/nodemailer
+ *   2. Set SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_FROM in .env
+ *   3. Uncomment the nodemailer block below.
  */
 
 type MailOptions = {
@@ -19,33 +19,26 @@ export async function sendEmail(opts: MailOptions): Promise<void> {
   const host = process.env.SMTP_HOST;
 
   if (!host) {
-    console.log(`[email] SMTP not configured — would send to ${opts.to}`);
-    console.log(`[email] Subject: ${opts.subject}`);
-    console.log(`[email] Body (text): ${opts.text ?? "(html only)"}`);
+    console.log(`[email] to=${opts.to} subject="${opts.subject}"`);
+    if (opts.text) console.log(`[email] ${opts.text}`);
     return;
   }
 
-  // Dynamic import so the module doesn't break builds without nodemailer installed
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const nodemailer = await import("nodemailer").catch(() => null);
-  if (!nodemailer) {
-    // Fallback: use raw SMTP via fetch to a mail relay API if one is configured
-    console.error("[email] nodemailer not installed. Add it: npm i nodemailer @types/nodemailer");
-    return;
-  }
+  /*
+   * Uncomment after: npm i nodemailer @types/nodemailer
+   *
+   * const nodemailer = await import("nodemailer");
+   * const t = nodemailer.default.createTransport({
+   *   host,
+   *   port: parseInt(process.env.SMTP_PORT ?? "587", 10),
+   *   secure: process.env.SMTP_SECURE === "true",
+   *   auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
+   * });
+   * await t.sendMail({
+   *   from: process.env.SMTP_FROM ?? "LocalTech <noreply@localtech.in>",
+   *   to: opts.to, subject: opts.subject, html: opts.html, text: opts.text,
+   * });
+   */
 
-  const transporter = nodemailer.default.createTransport({
-    host,
-    port: parseInt(process.env.SMTP_PORT ?? "587", 10),
-    secure: process.env.SMTP_SECURE === "true",
-    auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
-  });
-
-  await transporter.sendMail({
-    from: process.env.SMTP_FROM ?? "LocalTech <noreply@localtech.in>",
-    to: opts.to,
-    subject: opts.subject,
-    html: opts.html,
-    text: opts.text,
-  });
+  console.warn("[email] SMTP_HOST set but nodemailer not installed — email not sent");
 }
