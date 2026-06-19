@@ -71,7 +71,7 @@ export async function POST(
 
   await logEvent({
     type: "invoice.payment_link_created",
-    actorType: "REPAIR_SHOP_OWNER",
+    actorType: "ADMIN",
     actorId: auth.user!.userId,
     subjectType: "invoice",
     subjectId: id,
