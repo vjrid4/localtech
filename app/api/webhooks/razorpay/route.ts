@@ -32,7 +32,8 @@ export async function POST(request: NextRequest) {
   }
 
   const event = payload.event as string;
-  const entity = (payload.payload as Record<string, unknown>)?.payment_link?.entity as Record<string, unknown> | undefined;
+  const rzpPayload = payload.payload as Record<string, Record<string, unknown>> | undefined;
+  const entity = (rzpPayload?.payment_link as Record<string, unknown> | undefined)?.entity as Record<string, unknown> | undefined;
 
   if (!entity) {
     return NextResponse.json({ success: true, message: "No entity — ignoring" });

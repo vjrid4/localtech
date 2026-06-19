@@ -57,14 +57,14 @@ export async function PATCH(
   }
 
   const historyEntry = { status: target, at: new Date().toISOString(), by: "TECHNICIAN" };
-  let fieldVerifiedBadgeEarned: { name: string; wa: string | null } | null = null;
   const booking = await prisma.bookingRequest.findUnique({
     where: { id: job.bookingId },
     select: { phone: true, reference: true },
   });
   const trackUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? "https://localtech.in"}/track/${job.reference}`;
 
-  const updated = await prisma.$transaction(async (tx) => {
+  const { updated, fieldVerifiedBadge } = await prisma.$transaction(async (tx) => {
+    let fieldVerifiedBadge: { name: string; wa: string | null } | null = null;
     const u = await tx.job.update({
       where: { id: jobId },
       data: {
@@ -110,7 +110,7 @@ export async function PATCH(
             where: { id: profile!.id },
             data: { verificationLevel: "FIELD_VERIFIED" },
           });
-          fieldVerifiedBadgeEarned = { name: updatedProfile.user.name, wa: updatedProfile.whatsappNumber };
+          fieldVerifiedBadge = { name: updatedProfile.user.name, wa: updatedProfile.whatsappNumber };
         }
       }
     }
@@ -120,7 +120,7 @@ export async function PATCH(
         data: { status: "CANCELLED" },
       });
     }
-    return u;
+    return { updated: u, fieldVerifiedBadge };
   });
 
   await logEvent({
@@ -156,12 +156,12 @@ export async function PATCH(
     }
   }
 
-  if (fieldVerifiedBadgeEarned?.wa) {
+  if (fieldVerifiedBadge?.wa) {
     void sendWhatsApp({
-      to: fieldVerifiedBadgeEarned.wa,
+      to: fieldVerifiedBadge.wa,
       template: "activation_congrats",
       params: {
-        name: fieldVerifiedBadgeEarned.name,
+        name: fieldVerifiedBadge.name,
         profileUrl: `${process.env.NEXT_PUBLIC_APP_URL ?? "https://localtech.in"}/dashboard/technician/onboarding`,
       },
       subjectType: "technician_profile",
@@ -172,7 +172,7 @@ export async function PATCH(
       actorType: "SYSTEM",
       subjectType: "technician_profile",
       subjectId: profile!.id,
-      payload: { totalCompleted: updated.commissionDue },
+      payload: {},
     });
   }
 

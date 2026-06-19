@@ -16,7 +16,7 @@ import { prisma } from "@/lib/db/prisma";
  */
 export async function logEvent(e: {
   type: string;
-  actorType: "CUSTOMER" | "TECHNICIAN" | "ADMIN" | "SYSTEM";
+  actorType: "CUSTOMER" | "TECHNICIAN" | "ADMIN" | "REPAIR_SHOP_OWNER" | "SUPPLIER" | "SYSTEM";
   actorId?: string;
   subjectType: string;
   subjectId: string;
