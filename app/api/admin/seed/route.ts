@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { timingSafeEqual } from "crypto";
 import { hash } from "bcryptjs";
 import { prisma } from "@/lib/db/prisma";
 
@@ -21,8 +22,11 @@ const SEEDS = [
  */
 export async function POST(request: NextRequest) {
   const secret = process.env.CRON_SECRET;
-  const provided = request.headers.get("x-cron-secret") ?? request.headers.get("x-seed-secret");
-  if (secret && provided !== secret) {
+  if (!secret) {
+    return NextResponse.json({ success: false, message: "Seed disabled — CRON_SECRET not configured" }, { status: 503 });
+  }
+  const provided = request.headers.get("x-cron-secret") ?? request.headers.get("x-seed-secret") ?? "";
+  if (!provided || provided.length !== secret.length || !timingSafeEqual(Buffer.from(provided), Buffer.from(secret))) {
     return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 });
   }
 
@@ -98,9 +102,5 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  return NextResponse.json({
-    success: true,
-    message: `Seed complete. Password for all: ${TEST_PASSWORD}`,
-    results,
-  });
+  return NextResponse.json({ success: true, message: "Seed complete", results });
 }
