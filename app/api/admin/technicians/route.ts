@@ -40,7 +40,7 @@ export async function PATCH(request: NextRequest) {
     const { id, ...changes } = patchSchema.parse(await request.json());
     const before = await prisma.technicianProfile.findUnique({
       where: { id },
-      select: { isActive: true, verificationLevel: true },
+      select: { isActive: true, verificationLevel: true, referredBy: true },
     });
     if (!before) {
       return NextResponse.json({ success: false, message: "Not found" }, { status: 404 });
@@ -60,6 +60,42 @@ export async function PATCH(request: NextRequest) {
       subjectId: id,
       payload: { before, after: changes },
     });
+
+    // T31: Referral credits — ₹100 to both sides on first activation
+    if (changes.isActive === true && !before.isActive && before.referredBy) {
+      const referrer = await prisma.technicianProfile.findUnique({
+        where: { referralCode: before.referredBy },
+        select: { id: true },
+      });
+      if (referrer) {
+        const BONUS_PAISE = 10000; // ₹100
+        await prisma.$transaction([
+          // Referrer earns ₹100
+          prisma.technicianProfile.update({
+            where: { id: referrer.id },
+            data: { walletBalance: { increment: BONUS_PAISE } },
+          }),
+          prisma.walletTx.create({
+            data: { techId: referrer.id, type: "CREDIT", amount: BONUS_PAISE, reason: "referral_earned", refId: id },
+          }),
+          // New tech earns ₹100
+          prisma.technicianProfile.update({
+            where: { id },
+            data: { walletBalance: { increment: BONUS_PAISE } },
+          }),
+          prisma.walletTx.create({
+            data: { techId: id, type: "CREDIT", amount: BONUS_PAISE, reason: "referral_bonus", refId: referrer.id },
+          }),
+        ]);
+        await logEvent({
+          type: "referral.credited",
+          actorType: "SYSTEM",
+          subjectType: "technician",
+          subjectId: id,
+          payload: { referrerId: referrer.id, bonusPaise: BONUS_PAISE },
+        });
+      }
+    }
 
     return NextResponse.json({ success: true, data: updated });
   } catch (error) {

@@ -14,3 +14,6 @@
 
 # Warranty day-25 reminders + technician weekly summaries (Mon only) — 03:00 IST = 21:30 UTC
 30 21 * * * curl -sf -H "x-cron-secret: ${CRON_SECRET}" "http://127.0.0.1:3007/api/cron/weekly" > /dev/null 2>&1
+
+# Weekly metrics email to admin — every Monday 08:00 IST = 02:30 UTC
+30 2 * * 1 curl -sf -H "x-cron-secret: ${CRON_SECRET}" "http://127.0.0.1:3007/api/cron/weekly-metrics" > /dev/null 2>&1

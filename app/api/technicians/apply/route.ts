@@ -21,11 +21,16 @@ const applySchema = z.object({
   pincodes: z.array(z.string().regex(/^\d{6}$/)).min(1).max(20),
   yearsExperience: z.number().int().min(0).max(50),
   city: z.string().min(2).max(60),
+  referralCode: z.string().regex(/^LT-[A-Z0-9]{6}$/).optional(), // referrer's code
 });
 
 function slugify(name: string, city: string): string {
   const base = `${name} ${city}`.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
   return `${base}-${randomBytes(2).toString("hex")}`;
+}
+
+function generateReferralCode(): string {
+  return `LT-${randomBytes(3).toString("hex").toUpperCase()}`;
 }
 
 export async function POST(request: NextRequest) {
@@ -75,6 +80,8 @@ export async function POST(request: NextRequest) {
           homePincode: data.pincodes[0],
           yearsExperience: data.yearsExperience,
           isActive: false,
+          referralCode: generateReferralCode(),
+          referredBy: data.referralCode ?? null,
         },
       });
     });

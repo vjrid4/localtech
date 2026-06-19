@@ -57,6 +57,7 @@ export async function PATCH(
   }
 
   const historyEntry = { status: target, at: new Date().toISOString(), by: "TECHNICIAN" };
+  let fieldVerifiedBadgeEarned: { name: string; wa: string | null } | null = null;
   const booking = await prisma.bookingRequest.findUnique({
     where: { id: job.bookingId },
     select: { phone: true, reference: true },
@@ -82,14 +83,36 @@ export async function PATCH(
           expiresAt: new Date(Date.now() + WARRANTY_DAYS * 24 * 60 * 60 * 1000),
         },
       });
-      await tx.technicianProfile.update({
+      const updatedProfile = await tx.technicianProfile.update({
         where: { id: profile!.id },
         data: { totalCompleted: { increment: 1 } },
+        select: { totalCompleted: true, verificationLevel: true, whatsappNumber: true, user: { select: { name: true } } },
       });
       await tx.bookingRequest.update({
         where: { id: job.bookingId },
         data: { status: "CONVERTED" },
       });
+
+      // T33: auto-badge FIELD_VERIFIED at 25 clean completed jobs
+      if (
+        updatedProfile.totalCompleted >= 25 &&
+        updatedProfile.verificationLevel !== "FIELD_VERIFIED"
+      ) {
+        // Count jobs with open warranty claims (not "clean")
+        const dirtyCount = await tx.jobWarrantyClaim.count({
+          where: {
+            warranty: { job: { technicianId: profile!.id } },
+            status: { in: ["OPEN", "REDO_SCHEDULED"] },
+          },
+        });
+        if (dirtyCount === 0) {
+          await tx.technicianProfile.update({
+            where: { id: profile!.id },
+            data: { verificationLevel: "FIELD_VERIFIED" },
+          });
+          fieldVerifiedBadgeEarned = { name: updatedProfile.user.name, wa: updatedProfile.whatsappNumber };
+        }
+      }
     }
     if (target === "CANCELLED") {
       await tx.bookingRequest.update({
@@ -131,6 +154,26 @@ export async function PATCH(
         subjectId: jobId,
       });
     }
+  }
+
+  if (fieldVerifiedBadgeEarned?.wa) {
+    void sendWhatsApp({
+      to: fieldVerifiedBadgeEarned.wa,
+      template: "activation_congrats",
+      params: {
+        name: fieldVerifiedBadgeEarned.name,
+        profileUrl: `${process.env.NEXT_PUBLIC_APP_URL ?? "https://localtech.in"}/dashboard/technician/onboarding`,
+      },
+      subjectType: "technician_profile",
+      subjectId: profile!.id,
+    });
+    await logEvent({
+      type: "technician.field_verified",
+      actorType: "SYSTEM",
+      subjectType: "technician_profile",
+      subjectId: profile!.id,
+      payload: { totalCompleted: updated.commissionDue },
+    });
   }
 
   return NextResponse.json({ success: true, data: updated });

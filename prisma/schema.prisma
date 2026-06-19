@@ -400,6 +400,11 @@ model Invoice {
 
   paidDate        DateTime?
 
+  // Razorpay Payment Link
+  razorpayLinkId     String?
+  razorpayLinkUrl    String?
+  razorpayLinkExpiry DateTime?
+
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 }
@@ -418,6 +423,7 @@ enum PaymentMethod {
   CARD
   BANK_TRANSFER
   WHATSAPP_PAY
+  RAZORPAY
 }
 
 // Warranty & Device Health
@@ -637,9 +643,14 @@ model TechnicianProfile {
   acceptingJobs     Boolean  @default(true)  // technician-controlled
   totalCompleted    Int      @default(0)
   totalRedos        Int      @default(0)
+  // Referral
+  referralCode      String?  @unique        // auto-set on profile create
+  referredBy        String?                  // referralCode of referrer
+  walletBalance     Int      @default(0)    // paise (referral credits, etc.)
   offers            DispatchOffer[]
   jobs              Job[]
   reviews           JobReview[]
+  walletTxs         WalletTx[]
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
@@ -746,6 +757,20 @@ model JobWarrantyClaim {
   createdAt   DateTime  @default(now())
 
   @@index([status])
+}
+
+// Wallet ledger for technician referral credits and commission charges
+model WalletTx {
+  id        String            @id @default(cuid())
+  techId    String
+  tech      TechnicianProfile @relation(fields: [techId], references: [id], onDelete: Cascade)
+  type      String            // CREDIT | DEBIT
+  amount    Int               // paise
+  reason    String            // referral_bonus | referral_earned | commission | payout
+  refId     String?           // jobId, referral techId, etc.
+  createdAt DateTime          @default(now())
+
+  @@index([techId])
 }
 
 // Append-only domain event log — every metric, trust score, and future ML
