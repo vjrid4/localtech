@@ -12,6 +12,10 @@ function verifyCron(request: NextRequest): boolean {
   return request.headers.get("x-cron-secret") === secret;
 }
 
+function esc(s: string) {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+}
+
 function rupees(paise: number) {
   return `₹${(paise / 100).toLocaleString("en-IN", { maximumFractionDigits: 0 })}`;
 }
@@ -70,7 +74,7 @@ export async function GET(request: NextRequest) {
   const todayLabel = now.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
 
   const topTechRows = topTechs
-    .map((t) => `<tr><td style="padding:4px 12px">${t.user.name}</td><td style="padding:4px 12px;text-align:center">${techJobCounts[t.id]}</td></tr>`)
+    .map((t) => `<tr><td style="padding:4px 12px">${esc(t.user.name)}</td><td style="padding:4px 12px;text-align:center">${techJobCounts[t.id]}</td></tr>`)
     .join("");
 
   const html = `

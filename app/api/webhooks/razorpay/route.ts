@@ -14,9 +14,13 @@ export const dynamic = "force-dynamic";
 export async function POST(request: NextRequest) {
   const rawBody = await request.text();
   const signature = request.headers.get("x-razorpay-signature") ?? "";
-  const secret = process.env.RAZORPAY_WEBHOOK_SECRET ?? "";
+  const secret = process.env.RAZORPAY_WEBHOOK_SECRET;
 
-  if (secret && !verifyWebhookSignature(rawBody, signature, secret)) {
+  if (!secret) {
+    console.error("[razorpay webhook] RAZORPAY_WEBHOOK_SECRET not configured — rejecting");
+    return NextResponse.json({ success: false }, { status: 500 });
+  }
+  if (!verifyWebhookSignature(rawBody, signature, secret)) {
     return NextResponse.json({ success: false }, { status: 401 });
   }
 
