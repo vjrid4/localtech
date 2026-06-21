@@ -15,7 +15,7 @@ function pick<T>(arr: T[], slug: string, offset = 0): T {
 }
 
 // ── Service metadata ──────────────────────────────────────────────────────────
-export type ServiceType = "mobile" | "tv" | "laptop" | "appliance";
+export type ServiceType = "mobile" | "tv" | "laptop" | "appliance" | "mixer" | "fan" | "geyser" | "water-purifier" | "microwave" | "washing-machine" | "refrigerator" | "ac" | "cctv";
 
 export const SERVICES: Record<ServiceType, {
   label: string;
@@ -83,6 +83,141 @@ export const SERVICES: Record<ServiceType, {
       { emoji: "🍳", name: "Microwave / OTG", time: "1–3 hrs" },
       { emoji: "💨", name: "Geyser / Water Heater", time: "1–2 hrs" },
       { emoji: "🔊", name: "Mixer / Grinder", time: "1–2 hrs" },
+    ],
+  },
+  mixer: {
+    label: "Mixer Grinder Repair",
+    shortLabel: "Mixer Repair",
+    deviceLabel: "mixer grinder",
+    emoji: "🌀",
+    priceRange: "₹199 – ₹1,500",
+    issues: [
+      { emoji: "⚡", name: "Motor Not Starting", time: "30–60 min" },
+      { emoji: "🔊", name: "Unusual Noise / Vibration", time: "30–60 min" },
+      { emoji: "💧", name: "Jar Leaking", time: "15–30 min" },
+      { emoji: "🔧", name: "Blade / Coupler Broken", time: "30–45 min" },
+      { emoji: "🔌", name: "Switch / Wire Fault", time: "30–60 min" },
+      { emoji: "♨️", name: "Overheating / Burning Smell", time: "1–2 hrs" },
+    ],
+  },
+  fan: {
+    label: "Ceiling Fan Repair",
+    shortLabel: "Fan Repair",
+    deviceLabel: "ceiling fan",
+    emoji: "💨",
+    priceRange: "₹199 – ₹1,200",
+    issues: [
+      { emoji: "🐌", name: "Fan Running Slow", time: "30–60 min" },
+      { emoji: "🔇", name: "Fan Not Starting", time: "30–60 min" },
+      { emoji: "🔊", name: "Noise / Wobbling", time: "30–60 min" },
+      { emoji: "📡", name: "Remote / BLDC Control", time: "30–60 min" },
+      { emoji: "🔌", name: "Capacitor / Regulator", time: "30–45 min" },
+      { emoji: "🔧", name: "Blade / Bearing Replacement", time: "45–90 min" },
+    ],
+  },
+  geyser: {
+    label: "Geyser / Water Heater Repair",
+    shortLabel: "Geyser Repair",
+    deviceLabel: "geyser",
+    emoji: "🚿",
+    priceRange: "₹249 – ₹2,500",
+    issues: [
+      { emoji: "❄️", name: "Not Heating Water", time: "1–2 hrs" },
+      { emoji: "💧", name: "Water Leakage", time: "1–3 hrs" },
+      { emoji: "⚡", name: "Thermostat / Element Failure", time: "1–2 hrs" },
+      { emoji: "🔌", name: "No Power / Tripping MCB", time: "30–60 min" },
+      { emoji: "♨️", name: "Overheating", time: "1–2 hrs" },
+      { emoji: "🔧", name: "Anode Rod / Inlet Valve", time: "1–2 hrs" },
+    ],
+  },
+  "water-purifier": {
+    label: "Water Purifier Repair",
+    shortLabel: "RO Repair",
+    deviceLabel: "water purifier",
+    emoji: "💧",
+    priceRange: "₹299 – ₹3,500",
+    issues: [
+      { emoji: "💧", name: "Low / No Water Output", time: "1–2 hrs" },
+      { emoji: "🔊", name: "Unusual Taste / Odour", time: "1–2 hrs" },
+      { emoji: "💦", name: "Leaking from Tank", time: "1–2 hrs" },
+      { emoji: "⚡", name: "Pump Not Working", time: "1–3 hrs" },
+      { emoji: "🔧", name: "Filter / Membrane Change", time: "45–90 min" },
+      { emoji: "📊", name: "TDS Meter / Indicator", time: "30–60 min" },
+    ],
+  },
+  microwave: {
+    label: "Microwave Oven Repair",
+    shortLabel: "Microwave Repair",
+    deviceLabel: "microwave oven",
+    emoji: "📦",
+    priceRange: "₹349 – ₹3,000",
+    issues: [
+      { emoji: "⚡", name: "Not Heating", time: "1–3 hrs" },
+      { emoji: "🔌", name: "Not Turning On", time: "30–60 min" },
+      { emoji: "🔊", name: "Unusual Noise", time: "1–2 hrs" },
+      { emoji: "💡", name: "Interior Light / Display", time: "30–60 min" },
+      { emoji: "🚪", name: "Door / Latch Problem", time: "30–90 min" },
+      { emoji: "⏱️", name: "Turntable / Motor", time: "1–2 hrs" },
+    ],
+  },
+  "washing-machine": {
+    label: "Washing Machine Repair",
+    shortLabel: "Washing Machine Repair",
+    deviceLabel: "washing machine",
+    emoji: "👕",
+    priceRange: "₹399 – ₹4,000",
+    issues: [
+      { emoji: "💧", name: "Not Draining Water", time: "1–3 hrs" },
+      { emoji: "🔊", name: "Excessive Noise / Vibration", time: "1–2 hrs" },
+      { emoji: "⚡", name: "Not Starting / Power Issues", time: "30–60 min" },
+      { emoji: "🔧", name: "Drum / Bearing Fault", time: "2–5 hrs" },
+      { emoji: "💦", name: "Water Leakage", time: "1–3 hrs" },
+      { emoji: "📺", name: "Display / Control Panel", time: "1–2 hrs" },
+    ],
+  },
+  refrigerator: {
+    label: "Refrigerator Repair",
+    shortLabel: "Refrigerator Repair",
+    deviceLabel: "refrigerator",
+    emoji: "❄️",
+    priceRange: "₹499 – ₹5,000",
+    issues: [
+      { emoji: "❄️", name: "Not Cooling Properly", time: "2–5 hrs" },
+      { emoji: "🧊", name: "Ice Maker / Defrost", time: "2–4 hrs" },
+      { emoji: "💧", name: "Water Leaking Inside", time: "1–3 hrs" },
+      { emoji: "🔊", name: "Loud Noise / Vibration", time: "1–3 hrs" },
+      { emoji: "💡", name: "Interior Light / Display", time: "30–60 min" },
+      { emoji: "🔧", name: "Compressor / Gas Refill", time: "3–6 hrs" },
+    ],
+  },
+  ac: {
+    label: "AC Repair & Service",
+    shortLabel: "AC Repair",
+    deviceLabel: "air conditioner",
+    emoji: "❄️",
+    priceRange: "₹499 – ₹6,000",
+    issues: [
+      { emoji: "❄️", name: "AC Not Cooling", time: "1–3 hrs" },
+      { emoji: "💧", name: "Water Dripping / Leaking", time: "1–2 hrs" },
+      { emoji: "🔊", name: "Noise from Indoor Unit", time: "1–2 hrs" },
+      { emoji: "🌡️", name: "Gas Recharge / Refill", time: "1–2 hrs" },
+      { emoji: "⚡", name: "Compressor / PCB Fault", time: "2–5 hrs" },
+      { emoji: "🧹", name: "AC Deep Cleaning / Service", time: "1–2 hrs" },
+    ],
+  },
+  cctv: {
+    label: "CCTV Installation & Repair",
+    shortLabel: "CCTV Repair",
+    deviceLabel: "CCTV camera",
+    emoji: "📷",
+    priceRange: "₹499 – ₹8,000",
+    issues: [
+      { emoji: "📷", name: "No Video / Blank Screen", time: "1–3 hrs" },
+      { emoji: "🌙", name: "Night Vision Not Working", time: "1–2 hrs" },
+      { emoji: "💾", name: "DVR / NVR Issue", time: "1–3 hrs" },
+      { emoji: "🌐", name: "Remote / App Access", time: "1–2 hrs" },
+      { emoji: "🔌", name: "Power / Cable Fault", time: "30–90 min" },
+      { emoji: "📡", name: "New Camera Installation", time: "2–4 hrs" },
     ],
   },
 };
@@ -164,8 +299,85 @@ const APPLIANCE_INTROS = [
     `${city}'s summer heat makes a functioning AC non-negotiable. LocalTech's appliance technicians cover AC service, gas refill, and board-level repairs — all at your home, with upfront pricing and a written warranty.`,
 ];
 
+const MIXER_INTROS = [
+  (city: string) =>
+    `A mixer grinder that stops mid-grind or runs too hot is a kitchen emergency. LocalTech's certified appliance technicians in ${city} repair all brands of mixer grinders at your home — motor faults, leaky jars, broken couplers — usually within the hour.`,
+  (city: string) =>
+    `Mixer grinder repair in ${city} doesn't need a service centre trip. LocalTech sends a verified technician to your kitchen with spare motors, blades, and jars for all major brands. Fixed price, 30-day warranty, doorstep.`,
+];
+
+const FAN_INTROS = [
+  (city: string) =>
+    `A slow ceiling fan in ${city}'s summer heat is more than an inconvenience. LocalTech's certified technicians diagnose and fix BLDC, ceiling, and exhaust fans at your home — capacitors, regulators, bearings, remotes — with same-day service.`,
+  (city: string) =>
+    `Fan repair in ${city} is done right when a verified technician comes to your home with parts. LocalTech covers all brands — Atomberg, Havells, Orient, Crompton — with a written quote before any work starts.`,
+];
+
+const GEYSER_INTROS = [
+  (city: string) =>
+    `A geyser that won't heat or leaks inside the wall is urgent. LocalTech's ${city} technicians are trained in electric and instant geysers, replacing heating elements, thermostats, and inlet valves — at your bathroom, same day.`,
+  (city: string) =>
+    `Geyser repair in ${city} by a LocalTech verified technician means a written quote and 30-day warranty. We cover Racold, AO Smith, V-Guard, Bajaj, Havells — all repaired at your home without removing the unit.`,
+];
+
+const RO_INTROS = [
+  (city: string) =>
+    `An RO that gives less water or smells off is a health concern, not just a convenience issue. LocalTech's ${city} water purifier technicians service Kent, Eureka Forbes, Pureit, Livpure — at your home, with genuine filter replacements.`,
+  (city: string) =>
+    `Water purifier service in ${city} by LocalTech includes filter change, membrane replacement, and pump repair — all at your kitchen, with documented work and a 30-day warranty on parts.`,
+];
+
+const MICROWAVE_INTROS = [
+  (city: string) =>
+    `A microwave that won't heat or has a faulty turntable disrupts daily cooking. LocalTech's ${city} technicians repair LG, Samsung, IFB, Whirlpool microwaves at your home — magnetron, door latch, PCB faults — same day.`,
+  (city: string) =>
+    `Microwave repair in ${city} by a LocalTech verified technician means you get a diagnosed, quoted, and fixed oven — without carrying it anywhere. 30-day warranty on all parts replaced.`,
+];
+
+const WM_INTROS = [
+  (city: string) =>
+    `A washing machine that won't drain or shakes violently is a load-bearing problem for any household. LocalTech's ${city} technicians repair fully automatic and semi-automatic machines — Samsung, LG, Whirlpool, IFB — at your home, same day.`,
+  (city: string) =>
+    `Washing machine repair in ${city} by LocalTech means a technician at your door with the right parts. No waiting for a service centre slot — drum, pump, PCB, or door seal faults are diagnosed and fixed with a written quote first.`,
+];
+
+const FRIDGE_INTROS = [
+  (city: string) =>
+    `A refrigerator that stops cooling in ${city}'s heat is an emergency. LocalTech's certified technicians handle compressor checks, gas refill, thermostat and defrost faults — at your kitchen, with upfront pricing and a 30-day warranty.`,
+  (city: string) =>
+    `Refrigerator repair in ${city} is faster with LocalTech — no carrying a 200kg appliance anywhere. Our verified technicians service Samsung, LG, Whirlpool, Godrej, Haier at your home with spare parts stocked for common models.`,
+];
+
+const AC_INTROS = [
+  (city: string) =>
+    `In ${city}'s peak summer, an AC that stops cooling isn't a convenience problem — it's a health issue. LocalTech's certified technicians handle gas refill, compressor check, PCB faults, and deep cleaning at your home, same day.`,
+  (city: string) =>
+    `AC repair and service in ${city} by LocalTech: a verified, insured technician at your home, a written estimate before work starts, and a 30-day warranty. We service Daikin, Voltas, Blue Star, Carrier, Hitachi, Samsung, LG.`,
+];
+
+const CCTV_INTROS = [
+  (city: string) =>
+    `A CCTV system that goes blind at night or loses remote access defeats its purpose. LocalTech's ${city} security camera technicians fix Hikvision, CP Plus, Dahua systems — camera faults, DVR/NVR issues, app connectivity — at your premises.`,
+  (city: string) =>
+    `CCTV repair and installation in ${city} by LocalTech's verified technicians: new camera installation, cable routing, DVR setup, and fault diagnosis — for home, shop, or office — with fixed pricing and a written warranty.`,
+];
+
 export function getIntroVariant(slug: string, cityName: string, service: ServiceType): string {
-  const pools = { mobile: MOBILE_INTROS, tv: TV_INTROS, laptop: LAPTOP_INTROS, appliance: APPLIANCE_INTROS };
+  const pools: Record<ServiceType, Array<(city: string) => string>> = {
+    mobile: MOBILE_INTROS,
+    tv: TV_INTROS,
+    laptop: LAPTOP_INTROS,
+    appliance: APPLIANCE_INTROS,
+    mixer: MIXER_INTROS,
+    fan: FAN_INTROS,
+    geyser: GEYSER_INTROS,
+    "water-purifier": RO_INTROS,
+    microwave: MICROWAVE_INTROS,
+    "washing-machine": WM_INTROS,
+    refrigerator: FRIDGE_INTROS,
+    ac: AC_INTROS,
+    cctv: CCTV_INTROS,
+  };
   const fn = pick(pools[service], slug);
   return fn(cityName);
 }
