@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/db/prisma";
 import { authenticateToken } from "@/lib/auth/middleware";
+import { sendWhatsApp } from "@/lib/whatsapp";
 
 const updateRepairSchema = z.object({
   status: z.enum([
@@ -144,11 +145,35 @@ export async function PATCH(
       where: { id: repairId },
       data: updates,
       include: {
-        customer: true,
+        customer: { include: { user: { select: { name: true, phone: true } } } },
         device: true,
         technician: true,
       },
     });
+
+    // WhatsApp status notifications — fire-and-forget, never block the response
+    const customerPhone = repair.customer.user.phone;
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://localtech.in";
+    const trackUrl = `${appUrl}/track`;
+    if (customerPhone && updateData.status) {
+      if (updateData.status === "QUOTED" && updates.estimatedCost) {
+        void sendWhatsApp({
+          to: customerPhone,
+          template: "quote_ready",
+          params: { amount: `₹${updates.estimatedCost}`, trackUrl },
+          subjectType: "repair",
+          subjectId: repairId,
+        });
+      } else if (updateData.status === "COMPLETED") {
+        void sendWhatsApp({
+          to: customerPhone,
+          template: "job_completed",
+          params: { warrantyDays: "30", trackUrl },
+          subjectType: "repair",
+          subjectId: repairId,
+        });
+      }
+    }
 
     return NextResponse.json({
       success: true,

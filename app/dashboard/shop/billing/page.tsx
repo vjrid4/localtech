@@ -32,7 +32,7 @@ const PAYMENT_STATUS_COLORS: Record<string, string> = {
   CANCELLED: "#6b7280",
 };
 
-const PAYMENT_METHODS = ["CASH", "UPI", "CARD", "BANK_TRANSFER", "WHATSAPP_PAY"] as const;
+const PAYMENT_METHODS = ["CASH", "UPI", "CARD", "BANK_TRANSFER", "RAZORPAY", "WHATSAPP_PAY"] as const;
 
 const GST_RATES = [0, 5, 12, 18, 28];
 
@@ -151,6 +151,42 @@ function InvoiceModal({
         </div>
       </div>
     </div>
+  );
+}
+
+function SendPaymentLinkButton({ invoiceId }: { invoiceId: string }) {
+  const [state, setState] = useState<"idle" | "loading" | "done" | "err">("idle");
+  const [url, setUrl] = useState("");
+
+  async function send() {
+    setState("loading");
+    try {
+      const res = await apiPost<{ success: boolean; data: { url: string } }>(
+        `/api/invoices/${invoiceId}/payment-link`, {}
+      );
+      setUrl(res.data.url);
+      setState("done");
+    } catch {
+      setState("err");
+    }
+  }
+
+  if (state === "done") {
+    return (
+      <a href={url} target="_blank" rel="noopener noreferrer"
+        className="text-xs text-green-400 underline truncate max-w-32 block">
+        Link sent ↗
+      </a>
+    );
+  }
+  if (state === "err") {
+    return <span className="text-xs text-red-400">Failed</span>;
+  }
+  return (
+    <button onClick={send} disabled={state === "loading"}
+      className="text-xs px-2 py-1 rounded-lg bg-accent-500/10 border border-accent-500/20 text-accent-400 hover:bg-accent-500/20 transition disabled:opacity-40">
+      {state === "loading" ? "…" : "Send link"}
+    </button>
   );
 }
 
@@ -315,6 +351,11 @@ export default function BillingPage() {
                         style={{ background: (PAYMENT_STATUS_COLORS[inv.paymentStatus] ?? "#666") + "22", color: PAYMENT_STATUS_COLORS[inv.paymentStatus] ?? "#aaa" }}>
                         {inv.paymentStatus}
                       </span>
+                      {inv.paymentStatus === "PENDING" && (
+                        <div className="mt-1">
+                          <SendPaymentLinkButton invoiceId={inv.id} />
+                        </div>
+                      )}
                     </td>
                     <td className="py-3 px-5 text-right">
                       <p className="font-bold">{fmt(inv.totalAmount)}</p>
